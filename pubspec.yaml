@@ -78,6 +78,11 @@ flutter:
       fonts:
         - asset: asset/font/ChristmasHearths.ttf
           weight: 700
+    - family: Santa
+      fonts:
+        - asset: asset/font/Santa.ttf
+          weight: 700
+
     
   #
   # For details regarding fonts from package dependencies,
