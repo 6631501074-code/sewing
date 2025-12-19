@@ -11,6 +11,28 @@ class _LoginState extends State<Login> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  void _login() {
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      _showMessage('กรุณากรอก Username และ Password');
+      return;
+    }
+
+    if (username == 'admin' && password == '1234') {
+      _showMessage('Login สำเร็จ ✅');
+    } else {
+      _showMessage('Username หรือ Password ไม่ถูกต้อง ❌');
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,30 +41,29 @@ class _LoginState extends State<Login> {
         child: Center(
           child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min, // ⭐ ทำให้ column หดตาม content
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Image.asset('asset/img/img1.png'),
+
                   const Text(
-                    'Sewing App',
+                    'Sewing',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 35,
+                      fontFamily: 'Santa',
+                      fontSize: 40,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 4),
 
                   const Text(
                     'Login Screen',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
                   ),
 
                   const SizedBox(height: 10),
@@ -51,7 +72,13 @@ class _LoginState extends State<Login> {
                     controller: _usernameController,
                     decoration: const InputDecoration(
                       labelText: 'Username',
-                      border: OutlineInputBorder(),
+                      labelStyle: TextStyle(color: Colors.black),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black, width: 2),
+                      ),
                     ),
                   ),
 
@@ -62,18 +89,39 @@ class _LoginState extends State<Login> {
                     obscureText: true,
                     decoration: const InputDecoration(
                       labelText: 'Password',
-                      border: OutlineInputBorder(),
+                      labelStyle: TextStyle(color: Colors.black),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black, width: 2),
+                      ),
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 30),
 
-                  ElevatedButton(
-                    onPressed: () {
-                      print(_usernameController.text);
-                      print(_passwordController.text);
-                    },
-                    child: const Text('Login'),
+                  Align(
+                    alignment: Alignment.center,
+                    child: ElevatedButton(
+                      onPressed: _login, 
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 150,
+                          vertical: 8,
+                        ),
+                      ),
+                      child: const Text(
+                        'Login',
+                        style: TextStyle(
+                          fontSize: 23,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
