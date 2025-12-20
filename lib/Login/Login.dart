@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sewing/Homepage/Homepage.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -20,11 +21,17 @@ class _LoginState extends State<Login> {
       return;
     }
 
-    if (username == 'admin' && password == '1234') {
-      _showMessage('Login สำเร็จ ✅');
-    } else {
-      _showMessage('Username หรือ Password ไม่ถูกต้อง ❌');
-    }
+   if (username == 'admin' && password == '1234') {
+  _showMessage('Login สำเร็จ ✅');
+
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) => const Homepage()),
+  );
+} else {
+  _showMessage('Username หรือ Password ไม่ถูกต้อง ❌');
+
+}
   }
 
   void _showMessage(String message) {
