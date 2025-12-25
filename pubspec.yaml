@@ -35,6 +35,8 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   intl: ^0.20.2
+  speech_to_text: ^7.3.0
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +64,8 @@ flutter:
   assets:
    - asset/img/img1.png
    - asset/img/img2.png
+   - asset/img/img3.png
+   - asset/img/img4.png
    - asset/img/user.png
   
 
@@ -85,6 +89,17 @@ flutter:
       fonts:
         - asset: asset/font/Santa.ttf
           weight: 700
+    - family: THSarabunNew
+      fonts:
+        - asset: asset/font/THSarabunBold.ttf
+          weight: 400
+        - asset: asset/font/THSarabunBold.ttf
+          weight: 700
+        - asset: asset/font/THSarabunItalic.ttf
+          style: italic
+        - asset: asset/font/THSarabunBoldItalic.ttf
+          weight: 700
+          style: italic
 
     
   #

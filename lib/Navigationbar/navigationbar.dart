@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sewing/Homepage/Homepage.dart';
+import 'package:sewing/Voice/mic_page.dart';
 
 class Navigationbar extends StatefulWidget {
   const Navigationbar({super.key});
@@ -13,7 +14,7 @@ class _NavigationbarState extends State<Navigationbar> {
 
   final List<Widget> _pages = const [
     Homepage(),
-    MicPage(),
+    MiccPage(),
     ReportPage(),
     TaskPage(),
     HistoryPage(),
@@ -22,7 +23,6 @@ class _NavigationbarState extends State<Navigationbar> {
   @override
   Widget build(BuildContext context) {
     const activeColor = Colors.blueAccent;
-    const inactiveColor = Colors.white;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -160,13 +160,6 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class MicPage extends StatelessWidget {
-  const MicPage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text("Mic Page"));
-  }
-}
 
 class ReportPage extends StatelessWidget {
   const ReportPage({super.key});
