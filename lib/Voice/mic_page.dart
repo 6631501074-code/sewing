@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // ไม่จำเป็นในหน้า ถ้าใช้ใน service แล้ว
 
 import 'garment_dialog.dart';
 import 'measure_slide.dart';
@@ -18,6 +20,9 @@ class MiccPage extends StatefulWidget {
 }
 
 class _MicPageState extends State<MiccPage> {
+
+  final _fs = FirestoreService();
+
   GarmentType _selected = GarmentType.none;
 
   final PageController _pageController = PageController(viewportFraction: 0.78);
@@ -252,7 +257,6 @@ class _MicPageState extends State<MiccPage> {
   await _ensureSelected();
   if (_selected == GarmentType.none) return;
 
-  // ✅ สร้าง measures ก่อน (นี่แหละที่ทำให้แดงถ้าไม่มี)
   final measures = <String, String>{
     for (final f in _fields)
       f.keyName: ThaiToArabicDigitsFormatter.to2dpOrEmpty(
@@ -260,20 +264,31 @@ class _MicPageState extends State<MiccPage> {
       ),
   };
 
-  // ✅ เปิด dialog เก็บข้อมูลลูกค้า
   final result = await showSaveCustomerDialog(
     context: context,
     garmentType: _selected,
     measures: measures,
   );
 
-  if (result == null) return; // user กดปิด/ยกเลิก
+  if (result == null) return;
 
-  debugPrint('SAVE CUSTOMER: ${result.toJson()}');
-  debugPrint('MEASURES: $measures');
+  try {
+    // ✅ เลือก default status ของงานใหม่ (เช่น doing)
+    final jobId = await _fs.createJob(
+      customer: result,
+      measures: measures,
+      garmentType: _selected,
+      status: 'doing',
+    );
 
-  _toast('บันทึกแล้ว ✅');
+    debugPrint('✅ Saved jobId=$jobId');
+    _toast('บันทึกลงระบบแล้ว ✅');
+  } catch (e) {
+    debugPrint('❌ Save error: $e');
+    _toast('บันทึกไม่สำเร็จ ❌');
+  }
 }
+
 
 
   @override
