@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "923615600856",
+    "firebase_url": "https://sewingmobile-default-rtdb.firebaseio.com",
+    "project_id": "sewingmobile",
+    "storage_bucket": "sewingmobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:923615600856:android:8e99236dd11d8b31be37ad",
+        "android_client_info": {
+          "package_name": "com.example.sewing"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCV1Ehz2ZvfQPS-yHlApFdKvg4HtdK_3sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

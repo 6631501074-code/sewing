@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sewing/Homepage/Homepage.dart';
+import 'package:sewing/Voice/mic_page.dart';
+import 'package:sewing/See work/WorkQueuePage.dart';
 
 class Navigationbar extends StatefulWidget {
   const Navigationbar({super.key});
@@ -13,16 +15,14 @@ class _NavigationbarState extends State<Navigationbar> {
 
   final List<Widget> _pages = const [
     Homepage(),
-    MicPage(),
-    ReportPage(),
+    MiccPage(),
+    WorkQueuePage(),
     TaskPage(),
-    HistoryPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
     const activeColor = Colors.blueAccent;
-    const inactiveColor = Colors.white;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -70,24 +70,24 @@ class _NavigationbarState extends State<Navigationbar> {
                 ),
                 _NavItem(
                   icon: Icons.task_alt_rounded,
-                  isActive: _index == 4,
-                  activeColor: activeColor,
-                  inactiveColor: const Color.fromARGB(255, 111, 110, 110),
-                  onTap: () => setState(() => _index = 4),
-                ),
-                _NavItem(
-                  icon: Icons.bar_chart_rounded,
                   isActive: _index == 2,
                   activeColor: activeColor,
                   inactiveColor: const Color.fromARGB(255, 111, 110, 110),
                   onTap: () => setState(() => _index = 2),
                 ),
                 _NavItem(
-                  icon: Icons.history_rounded,
+                  icon: Icons.bar_chart_rounded,
                   isActive: _index == 3,
                   activeColor: activeColor,
                   inactiveColor: const Color.fromARGB(255, 111, 110, 110),
                   onTap: () => setState(() => _index = 3),
+                ),
+                _NavItem(
+                  icon: Icons.history_rounded,
+                  isActive: _index == 4,
+                  activeColor: activeColor,
+                  inactiveColor: const Color.fromARGB(255, 111, 110, 110),
+                  onTap: () => setState(() => _index = 4),
                 ),
               ],
             ),
@@ -151,38 +151,6 @@ class _NavItem extends StatelessWidget {
 // ✅ หน้า Placeholder (สร้างหน้าใหม่ไว้ให้ก่อน)
 // คุณค่อยเอาโค้ดหน้าจริงมาแทนทีหลังได้
 //
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text("Home Page"));
-  }
-}
-
-class MicPage extends StatelessWidget {
-  const MicPage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text("Mic Page"));
-  }
-}
-
-class ReportPage extends StatelessWidget {
-  const ReportPage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text("Task Page"));
-  }
-}
-
-class HistoryPage extends StatelessWidget {
-  const HistoryPage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text("Report Page"));
-  }
-}
 
 class TaskPage extends StatelessWidget {
   const TaskPage({super.key});
