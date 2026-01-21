@@ -8,7 +8,23 @@ class JobsRepository {
     return _db.collection('jobs').orderBy('pickupDate').snapshots();
 }
 
+  Stream<DocumentSnapshot> watchJob(String docId) {
+    return _db.collection('jobs').doc(docId).snapshots();
+  }
+
   Future<DocumentSnapshot> getJob(String docId) {
     return _db.collection('jobs').doc(docId).get();
+  }
+
+  Future<void> refreshJob(String docId) async {
+    await _db.collection('jobs').doc(docId).get(const GetOptions(source: Source.server));
+  }
+
+  Future<void> deleteJob(String docId) {
+    return _db.collection('jobs').doc(docId).delete();
+  }
+
+  Future<void> updateJob(String docId, Map<String, dynamic> data) {
+    return _db.collection('jobs').doc(docId).update(data);
   }
 }

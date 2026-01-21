@@ -14,6 +14,7 @@
   }
 
   enum _StatusFilter { all, doing, urgent, overdue, done }
+  enum _CategoryFilter { all, daily, package }
 
   class _WorkQueuePageState extends State<WorkQueuePage> {
     static const _text = Color(0xFF111827);
@@ -25,6 +26,7 @@
 
     String _q = '';
     _StatusFilter _statusFilter = _StatusFilter.all;
+    _CategoryFilter _categoryFilter = _CategoryFilter.all;
 
     @override
     void dispose() {
@@ -70,6 +72,10 @@
                     _buildFilterChip('Overdue', _StatusFilter.overdue),
                     const SizedBox(width: 8),
                     _buildFilterChip('Done', _StatusFilter.done),
+                    const SizedBox(width: 14),
+                    _buildCategoryChip('รายวัน', _CategoryFilter.daily),
+                    const SizedBox(width: 8),
+                    _buildCategoryChip('งานเหมา', _CategoryFilter.package),
                   ],
                 ),
               ),
@@ -103,6 +109,7 @@
     
                   // ✅ group by pickup date (ตัดเวลา)
                   jobs = _applyStatusFilter(jobs);
+                  jobs = _applyCategoryFilter(jobs);
                   final grouped = _groupByDate(jobs);
 
                   if (grouped.isEmpty) {
@@ -122,18 +129,34 @@
                         children: [
                           _DayHeader(date: day),
                           const SizedBox(height: 10),
-                          ...items.map((j) => Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: _JobCard(
-                                  job: j,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => WorkJobDetailPage(jobId: j.id),
-                                      ),
-                                    );
-                                  },
+                          ...items.map((j) => Dismissible(
+                                key: ValueKey(j.id),
+                                direction: DismissDirection.endToStart,
+                                confirmDismiss: (_) => _confirmDelete(context, j),
+                                onDismissed: (_) => _repo.deleteJob(j.id),
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF1F1),
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(color: const Color(0x33B42318)),
+                                  ),
+                                  child: const Icon(Icons.delete_rounded, color: Color(0xFFB42318)),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: _JobCard(
+                                    job: j,
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => WorkJobDetailPage(jobId: j.id),
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
                               )),
                           const SizedBox(height: 6),
@@ -178,6 +201,17 @@
       }
     }
 
+    List<WorkJob> _applyCategoryFilter(List<WorkJob> jobs) {
+      switch (_categoryFilter) {
+        case _CategoryFilter.all:
+          return jobs;
+        case _CategoryFilter.daily:
+          return jobs.where((j) => j.category == WorkCategory.daily).toList();
+        case _CategoryFilter.package:
+          return jobs.where((j) => j.category == WorkCategory.package).toList();
+      }
+    }
+
     Widget _buildFilterChip(String label, _StatusFilter value) {
       final selected = _statusFilter == value;
       return ChoiceChip(
@@ -188,6 +222,39 @@
         backgroundColor: const Color(0xFFF4F4F6),
         side: const BorderSide(color: _line),
       );
+    }
+
+    Widget _buildCategoryChip(String label, _CategoryFilter value) {
+      final selected = _categoryFilter == value;
+      return ChoiceChip(
+        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
+        selected: selected,
+        onSelected: (_) => setState(() => _categoryFilter = selected ? _CategoryFilter.all : value),
+        selectedColor: Colors.black.withOpacity(0.08),
+        backgroundColor: const Color(0xFFF4F4F6),
+        side: const BorderSide(color: _line),
+      );
+    }
+
+    Future<bool> _confirmDelete(BuildContext context, WorkJob job) async {
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('ลบรายการนี้?'),
+          content: Text('ต้องการลบงานของ ${job.customerName.isEmpty ? 'ลูกค้า' : job.customerName} ใช่ไหม'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('ยกเลิก'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('ลบ'),
+            ),
+          ],
+        ),
+      );
+      return result ?? false;
     }
   }
 
@@ -296,7 +363,9 @@
                       children: [
                         Expanded(
                           child: Text(
-                            job.title.isNotEmpty ? job.title : '#${job.jobId}',
+                            job.title.isNotEmpty
+                                ? job.title
+                                : (job.customerName.isNotEmpty ? job.customerName : '#${job.jobId}'),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
