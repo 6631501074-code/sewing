@@ -12,8 +12,11 @@
 
     static const _text = Color(0xFF111827);
     static const _muted = Color(0xFF6B7280);
-    static const _line = Color(0x14111827);
-    static const _bg = Color(0xFFF4F4F6);
+    static const _line = Color(0x0F111827);
+    static const _bg = Color(0xFFFAFAFB);
+    static const _card = Color(0xFFFFFFFF);
+    static const _chip = Color(0xFFF6F7F9);
+    static const _danger = Color(0xFFEF4444);
 
     @override
     Widget build(BuildContext context) {
@@ -24,14 +27,14 @@
         builder: (context, snap) {
           if (snap.hasError) {
             return Scaffold(
-              backgroundColor: Colors.white,
+              backgroundColor: _bg,
               appBar: _buildAppBar(context, repo, null),
               body: const Center(child: Text('เกิดข้อผิดพลาดในการโหลดข้อมูล')),
             );
           }
           if (!snap.hasData) {
             return Scaffold(
-              backgroundColor: Colors.white,
+              backgroundColor: _bg,
               appBar: _buildAppBar(context, repo, null),
               body: const Center(child: CircularProgressIndicator()),
             );
@@ -43,7 +46,7 @@
           final phone = job.customerPhone.isNotEmpty ? job.customerPhone : '-';
 
           return Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: _bg,
             appBar: _buildAppBar(context, repo, job),
             body: RefreshIndicator(
               onRefresh: () => repo.refreshJob(jobId),
@@ -122,7 +125,7 @@
     AppBar _buildAppBar(BuildContext context, JobsRepository repo, WorkJob? job) {
       return AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: _bg,
         foregroundColor: _text,
         title: const Text('รายละเอียดงาน', style: TextStyle(fontWeight: FontWeight.w900)),
         actions: job == null
@@ -142,7 +145,7 @@
                 ),
                 IconButton(
                   tooltip: 'ลบ',
-                  icon: const Icon(Icons.delete_rounded),
+                  icon: const Icon(Icons.delete_outline, color: _danger),
                   onPressed: () => _onDelete(context, repo, job),
                 ),
               ],
@@ -184,8 +187,13 @@
       final result = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('ลบงานนี้?'),
-          content: Text('ต้องการลบงานของ $displayName ใช่หรือไม่'),
+          backgroundColor: _card,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Text('ลบงานนี้?', style: TextStyle(fontWeight: FontWeight.w900)),
+          content: Text(
+            'ต้องการลบงานของ $displayName ใช่หรือไม่',
+            style: const TextStyle(color: _muted),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -193,6 +201,7 @@
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(foregroundColor: _danger),
               child: const Text('ลบ'),
             ),
           ],
@@ -205,8 +214,13 @@
       final result = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('ยืนยันงานเสร็จแล้ว?'),
-          content: Text('ต้องการเปลี่ยนสถานะงานของ ${job.customerName.isEmpty ? 'ลูกค้า' : job.customerName} เป็นเสร็จแล้วใช่หรือไม่'),
+          backgroundColor: _card,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Text('ยืนยันงานเสร็จแล้ว?', style: TextStyle(fontWeight: FontWeight.w900)),
+          content: Text(
+            'ต้องการเปลี่ยนสถานะงานของ ${job.customerName.isEmpty ? 'ลูกค้า' : job.customerName} เป็นเสร็จแล้วใช่หรือไม่',
+            style: const TextStyle(color: _muted),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -255,8 +269,9 @@
   class _EditJobDialogState extends State<_EditJobDialog> {
     static const _text = Color(0xFF111827);
     static const _muted = Color(0xFF6B7280);
-    static const _line = Color(0x14111827);
-    static const _bg = Color(0xFFF4F4F6);
+    static const _line = Color(0x0F111827);
+    static const _bg = Color(0xFFF7F8FA);
+    static const _card = Color(0xFFFFFFFF);
 
     final _titleC = TextEditingController();
     final _nameC = TextEditingController();
@@ -334,6 +349,7 @@
     @override
     Widget build(BuildContext context) {
       return Dialog(
+        backgroundColor: _card,
         insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
@@ -514,8 +530,8 @@
           label: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
           selected: selected,
           onSelected: (_) => setState(() => _category = value),
-          selectedColor: Colors.black.withOpacity(0.08),
-          backgroundColor: const Color(0xFFF4F4F6),
+          selectedColor: Colors.black.withOpacity(0.06),
+          backgroundColor: _bg,
           side: const BorderSide(color: _line),
         ),
       );
@@ -574,7 +590,7 @@
     final Widget child;
     const _Card({required this.child});
 
-    static const _line = Color(0x14111827);
+    static const _line = Color(0x0F111827);
 
     @override
     Widget build(BuildContext context) {
@@ -584,6 +600,13 @@
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: _line),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A000000),
+              blurRadius: 12,
+              offset: Offset(0, 6),
+            ),
+          ],
         ),
         child: child,
       );
@@ -594,8 +617,8 @@
     final String label;
     const _Pill({required this.label});
 
-    static const _bg = Color(0xFFF4F4F6);
-    static const _line = Color(0x14111827);
+    static const _bg = Color(0xFFF6F7F9);
+    static const _line = Color(0x0F111827);
     static const _text = Color(0xFF111827);
 
     @override
