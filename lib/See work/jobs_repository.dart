@@ -5,13 +5,8 @@ class JobsRepository {
   JobsRepository(this._db);
 
   Stream<QuerySnapshot> watchActiveJobs() {
-    return _db
-        .collection('jobs')
-        .where('status', whereNotIn: ['done']) // ✅ กัน done ออก
-        .orderBy('status') // (optional) ถ้าอยากให้ urgent มาก่อนในวันเดียวกัน
-        .orderBy('pickupDate')
-        .snapshots();
-  }
+    return _db.collection('jobs').orderBy('pickupDate').snapshots();
+}
 
   Future<DocumentSnapshot> getJob(String docId) {
     return _db.collection('jobs').doc(docId).get();

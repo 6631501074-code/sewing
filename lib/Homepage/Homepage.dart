@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -132,7 +133,21 @@ class _HomepageState extends State<Homepage> {
                   controller: _taskScroll,
                   padding: EdgeInsets.zero,
                   children: [
-                    TaskSection(date: DateTime.now(), tasks: mockTasks),
+                    StreamBuilder<List<TaskItem>>(
+                      stream: watchHomepageTasks(FirebaseFirestore.instance),
+                      builder: (context, snap) {
+                        if (snap.hasError) {
+                          return const Text('Failed to load tasks');
+                        }
+                        if (!snap.hasData) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        return TaskSection(date: DateTime.now(), tasks: snap.data!);
+                      },
+                    ),
                     const SizedBox(height: 16),
                   ],
                 ),

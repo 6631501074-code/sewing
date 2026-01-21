@@ -1,42 +1,50 @@
-import 'task_section.dart';
-import 'task_card.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-final List<TaskItem> mockTasks = [
-  TaskItem(
-    title: "Cutting - Dress #A102",
-    tailorName: "Tailor: Nook",
-    status: TaskStatus.urgent,
-    imagePath: "asset/img/user.png",
-  ),
-  TaskItem(
-    title: "Sewing - Shirt #B221",
-    tailorName: "Tailor: Ploy",
-    status: TaskStatus.doing,
-    imagePath: "asset/img/user.png",
-  ),
-  TaskItem(
-    title: "Fitting - Suit #S010",
-    tailorName: "Tailor: Bank",
-    status: TaskStatus.doing,
-    imagePath: "asset/img/user.png",
-  ),
-  TaskItem(
-    title: "Deliver - Skirt #K900",
-    tailorName: "Tailor: May",
-    status: TaskStatus.done,
-    imagePath: "asset/img/user.png",
-  ),
-  TaskItem(
-    title: "Check size - Customer #C77",
-    tailorName: "Tailor: Fai",
-    status: TaskStatus.urgent,
-    imagePath: "asset/img/user.png",
-  ),
-  // ✅ เกิน 5 เพื่อทดสอบ "+x more"
-  TaskItem(
-    title: "Extra task - Pants #P100",
-    tailorName: "Tailor: Art",
-    status: TaskStatus.doing,
-    imagePath: "asset/img/user.png",
-  ),
-];
+import 'task_card.dart';
+import 'task_section.dart';
+
+Stream<List<TaskItem>> watchHomepageTasks(FirebaseFirestore db) {
+  return db
+      .collection('jobs')
+      .orderBy('pickupDate')
+      .snapshots()
+      .map((snap) => snap.docs.map(_taskItemFromDoc).toList());
+}
+
+TaskItem _taskItemFromDoc(DocumentSnapshot doc) {
+  final data = (doc.data() as Map<String, dynamic>? ?? {});
+  final String title = (data['title'] ?? '').toString();
+  final String jobId = (data['jobId'] ?? doc.id).toString();
+  final String name = (data['customerName'] ?? data['name'] ?? '').toString();
+  final String statusRaw = (data['status'] ?? 'doing').toString();
+  final Timestamp? pickupTs = data['pickupDate'];
+  final DateTime pickupDate = pickupTs?.toDate() ?? DateTime.now();
+
+  final DateTime now = DateTime.now();
+  final DateTime today = DateTime(now.year, now.month, now.day);
+  final bool isOverdue = pickupDate.isBefore(today) && statusRaw != 'done';
+
+  final String garmentType = (data['garmentType'] ?? '').toString();
+  final bool isPants = garmentType.toLowerCase().contains('pants');
+  final String imagePath = isPants ? 'assets/icons/pants.png' : 'assets/icons/shirt.png';
+
+  return TaskItem(
+    title: title.isNotEmpty ? title : '#$jobId',
+    tailorName: 'Customer: ${name.isEmpty ? '-' : name}',
+    status: _taskStatusFrom(statusRaw, isOverdue),
+    imagePath: imagePath,
+  );
+}
+
+TaskStatus _taskStatusFrom(String s, bool overdue) {
+  if (overdue) return TaskStatus.overdue;
+  switch (s) {
+    case 'urgent':
+      return TaskStatus.urgent;
+    case 'done':
+      return TaskStatus.done;
+    case 'doing':
+    default:
+      return TaskStatus.doing;
+  }
+}

@@ -58,22 +58,29 @@ class WorkJob {
   });
 
   factory WorkJob.fromDoc(DocumentSnapshot doc) {
-    final data = (doc.data() as Map<String, dynamic>? ?? {});
-    final Timestamp? ap = data['appointmentDate'];
-    final Timestamp? pu = data['pickupDate'];
+  final data = (doc.data() as Map<String, dynamic>? ?? {});
+  final Timestamp? ap = data['appointmentDate'];
+  final Timestamp? pu = data['pickupDate'];
 
-    return WorkJob(
-      id: doc.id,
-      jobId: (data['jobId'] ?? doc.id).toString(),
-      title: (data['title'] ?? '').toString(),
-      customerName: (data['customerName'] ?? '').toString(),
-      customerPhone: (data['customerPhone'] ?? '').toString(),
-      category: workCategoryFrom((data['category'] ?? 'daily').toString()),
-      garmentType: (data['garmentType'] ?? 'pantsOfficial').toString(),
-      appointmentDate: (ap?.toDate()) ?? DateTime.now(),
-      pickupDate: (pu?.toDate()) ?? DateTime.now(),
-      status: jobStatusFrom((data['status'] ?? 'doing').toString()),
-      measures: Map<String, dynamic>.from(data['measures'] ?? const {}),
-    );
-  }
+  return WorkJob(
+    id: doc.id,
+    jobId: (data['jobId'] ?? doc.id).toString(),
+
+    // ✅ title อาจไม่มี ให้ fallback
+    title: (data['title'] ?? '').toString(),
+
+    // ✅ รองรับทั้ง customerName และ name
+    customerName: (data['customerName'] ?? data['name'] ?? '').toString(),
+
+    // ✅ รองรับทั้ง customerPhone และ phone
+    customerPhone: (data['customerPhone'] ?? data['phone'] ?? '').toString(),
+
+    category: workCategoryFrom((data['category'] ?? 'daily').toString()),
+    garmentType: (data['garmentType'] ?? 'pantsOfficial').toString(),
+    appointmentDate: (ap?.toDate()) ?? DateTime.now(),
+    pickupDate: (pu?.toDate()) ?? DateTime.now(),
+    status: jobStatusFrom((data['status'] ?? 'doing').toString()),
+    measures: Map<String, dynamic>.from(data['measures'] ?? const {}),
+  );
+}
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum TaskStatus { urgent, doing, done }
+enum TaskStatus { urgent, doing, overdue, done }
 
 class TaskCard extends StatelessWidget {
   final String title;      // ชื่องาน
@@ -42,10 +42,23 @@ class TaskCard extends StatelessWidget {
         child: Row(
           children: [
             // รูป
-            CircleAvatar(
-              radius: 22,
-              backgroundImage: AssetImage(imagePath),
-              backgroundColor: Colors.grey.shade200,
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.checkroom_rounded, color: Color(0xFF9CA3AF)),
+                ),
+              ),
             ),
 
             const SizedBox(width: 12),
@@ -107,6 +120,8 @@ class TaskCard extends StatelessWidget {
         return _StatusUI("Urgent", const Color(0xFFFFE5E5), const Color(0xFFCC1F1F));
       case TaskStatus.doing:
         return _StatusUI("Doing", const Color(0xFFE6F0FF), const Color(0xFF1E63D5));
+      case TaskStatus.overdue:
+        return _StatusUI("Overdue", const Color(0xFFFFF3E0), const Color(0xFFB45309));
       case TaskStatus.done:
         return _StatusUI("Done", const Color(0xFFE7F8EF), const Color(0xFF168A47));
     }
