@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-enum TaskStatus { none, normal, urgent }
+enum DayStatus { none, normal, urgent, overdue, done }
 
 class DayTaskInfo extends StatelessWidget {
   final DateTime date;
-  final TaskStatus status;
+  final DayStatus status;
   final bool isSelected;
   final VoidCallback? onTap;
 
@@ -19,14 +19,15 @@ class DayTaskInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dayName = DateFormat('E').format(date); // Mon Tue ...
-    final dayNumber = DateFormat('d').format(date); // 21
+    final dayName = DateFormat('E', 'th_TH').format(date);
+    final dayNumber = DateFormat('d').format(date);
 
-    // สีจุดสถานะ
     final Color dotColor = switch (status) {
-      TaskStatus.none => Colors.transparent,
-      TaskStatus.normal => Colors.orange, // งานปกติ
-      TaskStatus.urgent => Colors.red,     // งานด่วน
+      DayStatus.none => Colors.transparent,
+      DayStatus.normal => Colors.orange,
+      DayStatus.urgent => Colors.red,
+      DayStatus.overdue => const Color(0xFFB45309),
+      DayStatus.done => const Color(0xFF168A47),
     };
 
     return InkWell(
@@ -34,7 +35,7 @@ class DayTaskInfo extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       child: Container(
         width: 54,
-        height: 78, // ✅ กำหนดสูงพอดี
+        height: 78,
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? Colors.black : Colors.white,
@@ -64,8 +65,6 @@ class DayTaskInfo extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-
-            // ✅ จุดสถานะ (ไม่มีเลข taskCount แล้ว)
             Container(
               width: 6,
               height: 6,

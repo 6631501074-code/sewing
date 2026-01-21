@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sewing/Homepage/Homepage.dart';
+import 'package:sewing/Login/Resgister.dart';
+import 'package:sewing/Navigationbar/navigationbar.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -26,7 +28,7 @@ class _LoginState extends State<Login> {
 
   Navigator.pushReplacement(
     context,
-    MaterialPageRoute(builder: (context) => const Homepage()),
+    MaterialPageRoute(builder: (context) => const Navigationbar()),
   );
 } else {
   _showMessage('Username หรือ Password ไม่ถูกต้อง ❌');
@@ -128,6 +130,18 @@ class _LoginState extends State<Login> {
                           color: Colors.black,
                         ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const Resgister()),
+                        );
+                      },
+                      child: const Text('ยังไม่มีบัญชี? สมัครสมาชิก'),
                     ),
                   ),
                 ],

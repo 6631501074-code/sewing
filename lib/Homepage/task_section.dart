@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:sewing/See work/work_job_detail_page.dart';
 
 import 'task_card.dart';
 
 class TaskItem {
+  final String jobId;
   final String title;
   final String tailorName;
   final TaskStatus status;
   final String imagePath;
+  final DateTime pickupDate;
 
   TaskItem({
+    required this.jobId,
     required this.title,
     required this.tailorName,
     required this.status,
     required this.imagePath,
+    required this.pickupDate,
   });
 }
 
@@ -70,7 +75,12 @@ class TaskSection extends StatelessWidget {
                 status: t.status,
                 imagePath: t.imagePath,
                 onTap: () {
-                  // TODO: ไปหน้า Task Detail
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => WorkJobDetailPage(jobId: t.jobId),
+                    ),
+                  );
                 },
               ),
             )),

@@ -33,10 +33,12 @@ TaskItem _taskItemFromDoc(DocumentSnapshot doc) {
       : (name.isNotEmpty ? name : '#$jobId');
 
   return TaskItem(
+    jobId: doc.id,
     title: displayTitle,
     tailorName: 'Customer: ${name.isEmpty ? '-' : name}',
     status: _taskStatusFrom(statusRaw, isOverdue),
     imagePath: imagePath,
+    pickupDate: pickupDate,
   );
 }
 

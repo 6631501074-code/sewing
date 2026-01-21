@@ -6,6 +6,7 @@ import 'DailyChallengeCard.dart';
 import 'WeekTaskStrip.dart';
 import 'task_section.dart';
 import 'mock_tasks.dart';
+import 'Settings.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -16,6 +17,7 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage> {
   final String name = "Preecha S.";
+  final String _userId = 'admin';
   final ScrollController _taskScroll = ScrollController();
   double _titleOpacity = 1.0;
 
@@ -44,65 +46,80 @@ class _HomepageState extends State<Homepage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ===== TOP BAR (ไม่เลื่อน) =====
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundImage: const AssetImage('asset/img/user.png'),
-                    backgroundColor: Colors.grey.shade200,
-                  ),
-                  const SizedBox(width: 12),
+              // Top bar
+              StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance.collection('users').doc(_userId).snapshots(),
+                builder: (context, snap) {
+                  final data = (snap.data?.data() as Map<String, dynamic>?) ?? {};
+                  final displayName = (data['name'] ?? name).toString();
+                  final photoUrl = (data['photoUrl'] ?? '').toString();
 
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          "Hello, $name",
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          "Today $todayText",
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  final imageProvider = photoUrl.isNotEmpty
+                      ? NetworkImage(photoUrl) as ImageProvider
+                      : const AssetImage('asset/img/user.png');
 
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.settings),
-                      onPressed: () {},
-                    ),
-                  ),
-                ],
+                  return Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundImage: imageProvider,
+                        backgroundColor: Colors.grey.shade200,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              "Hello, $displayName",
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              "Today $todayText",
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.settings),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const ProfileMenu()),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
 
               const SizedBox(height: 18),
 
-              // ===== DAILY CHALLENGE (ไม่เลื่อน) =====
+              // Daily challenge
               StreamBuilder<List<TaskItem>>(
                 stream: watchHomepageTasks(FirebaseFirestore.instance),
                 builder: (context, snap) {
@@ -115,12 +132,12 @@ class _HomepageState extends State<Homepage> {
 
               const SizedBox(height: 18),
 
-              // ===== WEEK STRIP (ไม่เลื่อน) =====
+              // Week strip
               const WeekTaskStrip(),
 
               const SizedBox(height: 18),
 
-              // ===== TITLE (จางตามการเลื่อน task) =====
+              // Title
               AnimatedOpacity(
                 duration: const Duration(milliseconds: 150),
                 opacity: _titleOpacity,
@@ -135,7 +152,6 @@ class _HomepageState extends State<Homepage> {
 
               const SizedBox(height: 12),
 
-              // ✅ ตรงนี้เท่านั้นที่ “เลื่อน”
               Expanded(
                 child: ListView(
                   controller: _taskScroll,
