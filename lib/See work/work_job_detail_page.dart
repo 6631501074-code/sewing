@@ -1,5 +1,6 @@
   import 'package:flutter/material.dart';
   import 'package:cloud_firestore/cloud_firestore.dart';
+  import 'package:flutter/services.dart';
   import 'package:intl/intl.dart';
 
   import 'jobs_repository.dart';
@@ -25,7 +26,7 @@
             return Scaffold(
               backgroundColor: Colors.white,
               appBar: _buildAppBar(context, repo, null),
-              body: const Center(child: Text('โหลดข้อมูลไม่สำเร็จ')),
+              body: const Center(child: Text('เกิดข้อผิดพลาดในการโหลดข้อมูล')),
             );
           }
           if (!snap.hasData) {
@@ -62,7 +63,7 @@
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'ลูกค้า: $name  เบอร์: $phone',
+                          'ลูกค้า: $name  โทร: $phone',
                           style: const TextStyle(fontWeight: FontWeight.w800, color: _muted),
                         ),
                         const SizedBox(height: 10),
@@ -70,9 +71,9 @@
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            _Pill(label: 'หมวดหมู่: ${workCategoryLabel(job.category)}'),
-                            _Pill(label: 'วันนัด: ${d(job.appointmentDate)}'),
-                            _Pill(label: 'วันรับ: ${d(job.pickupDate)}'),
+                            _Pill(label: 'ประเภทงาน: ${workCategoryLabel(job.category)}'),
+                            _Pill(label: 'วันนัดหมาย: ${d(job.appointmentDate)}'),
+                            _Pill(label: 'วันรับชุด: ${d(job.pickupDate)}'),
                           ],
                         ),
                       ],
@@ -81,7 +82,7 @@
                   const SizedBox(height: 12),
 
                   Text(
-                    'ค่าที่วัด',
+                    'ขนาดตัว / สัดส่วน',
                     style: TextStyle(fontWeight: FontWeight.w900, color: _text.withOpacity(0.85)),
                   ),
                   const SizedBox(height: 8),
@@ -128,6 +129,13 @@
             ? null
             : [
                 IconButton(
+                  tooltip: 'ยืนยันงานเสร็จ',
+                  icon: const Icon(Icons.check_circle_outline),
+                  onPressed: job.status == JobStatus.done
+                      ? null
+                      : () => _confirmDone(context, repo, job),
+                ),
+                IconButton(
                   tooltip: 'แก้ไข',
                   icon: const Icon(Icons.edit_rounded),
                   onPressed: () => _onEdit(context, repo, job),
@@ -172,11 +180,12 @@
     }
 
     Future<bool> _confirmDelete(BuildContext context, WorkJob job) async {
+      final displayName = job.customerName.isEmpty ? 'ลูกค้า' : job.customerName;
       final result = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('ลบรายการนี้?'),
-          content: Text('ต้องการลบงานของ ${job.customerName.isEmpty ? 'ลูกค้า' : job.customerName} ใช่ไหม'),
+          title: const Text('ลบงานนี้?'),
+          content: Text('ต้องการลบงานของ $displayName ใช่หรือไม่'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -190,6 +199,30 @@
         ),
       );
       return result ?? false;
+    }
+
+    Future<void> _confirmDone(BuildContext context, JobsRepository repo, WorkJob job) async {
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('ยืนยันงานเสร็จแล้ว?'),
+          content: Text('ต้องการเปลี่ยนสถานะงานของ ${job.customerName.isEmpty ? 'ลูกค้า' : job.customerName} เป็นเสร็จแล้วใช่หรือไม่'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('ยกเลิก'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('ยืนยัน'),
+            ),
+          ],
+        ),
+      );
+
+      if (result != true) return;
+
+      await repo.updateJob(job.id, {'status': 'done'});
     }
   }
 
@@ -325,13 +358,26 @@
                 _field(
                   label: 'ชื่องาน',
                   controller: _titleC,
-                  hint: 'เช่น ตัดกางเกง',
+                  hint: 'เช่น ตัดสูทคุณพ่อ',
+                  textCapitalization: TextCapitalization.words,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r"[A-Za-z0-9\u0E00-\u0E7F\s\.\-'\(\)]"),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 _field(
                   label: 'ชื่อลูกค้า',
                   controller: _nameC,
-                  hint: 'ชื่อ-นามสกุล',
+                  hint: 'ระบุชื่อลูกค้า',
+                  keyboardType: TextInputType.name,
+                  textCapitalization: TextCapitalization.words,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r"[A-Za-z\u0E00-\u0E7F\s\.\-']"),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 _field(
@@ -345,7 +391,7 @@
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'หมวดหมู่',
+                    'ประเภทงาน',
                     style: TextStyle(fontWeight: FontWeight.w900, color: _text.withOpacity(0.8)),
                   ),
                 ),
@@ -354,7 +400,7 @@
                   children: [
                     _categoryChip(WorkCategory.daily, 'รายวัน'),
                     const SizedBox(width: 8),
-                    _categoryChip(WorkCategory.package, 'งานเหมา'),
+                    _categoryChip(WorkCategory.package, 'แพ็กเกจ'),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -363,7 +409,7 @@
                   children: [
                     Expanded(
                       child: _dateTile(
-                        title: 'วันนัด',
+                        title: 'วันนัดหมาย',
                         value: _fmtDate(_appointmentDate),
                         onTap: _pickAppointment,
                       ),
@@ -371,7 +417,7 @@
                     const SizedBox(width: 10),
                     Expanded(
                       child: _dateTile(
-                        title: 'วันรับ',
+                        title: 'วันรับชุด',
                         value: _fmtDate(_pickupDate),
                         onTap: _pickPickup,
                       ),
@@ -424,6 +470,8 @@
       required TextEditingController controller,
       required String hint,
       TextInputType? keyboardType,
+      TextCapitalization textCapitalization = TextCapitalization.none,
+      List<TextInputFormatter>? inputFormatters,
     }) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,6 +481,8 @@
           TextField(
             controller: controller,
             keyboardType: keyboardType,
+            textCapitalization: textCapitalization,
+            inputFormatters: inputFormatters,
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(color: _muted),

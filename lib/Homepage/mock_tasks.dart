@@ -28,8 +28,12 @@ TaskItem _taskItemFromDoc(DocumentSnapshot doc) {
   final bool isPants = garmentType.toLowerCase().contains('pants');
   final String imagePath = isPants ? 'assets/icons/pants.png' : 'assets/icons/shirt.png';
 
+  final displayTitle = title.isNotEmpty
+      ? title
+      : (name.isNotEmpty ? name : '#$jobId');
+
   return TaskItem(
-    title: title.isNotEmpty ? title : '#$jobId',
+    title: displayTitle,
     tailorName: 'Customer: ${name.isEmpty ? '-' : name}',
     status: _taskStatusFrom(statusRaw, isOverdue),
     imagePath: imagePath,

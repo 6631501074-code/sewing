@@ -103,7 +103,15 @@ class _HomepageState extends State<Homepage> {
               const SizedBox(height: 18),
 
               // ===== DAILY CHALLENGE (ไม่เลื่อน) =====
-              const DailyChallengeCard(),
+              StreamBuilder<List<TaskItem>>(
+                stream: watchHomepageTasks(FirebaseFirestore.instance),
+                builder: (context, snap) {
+                  if (!snap.hasData) {
+                    return const DailyChallengeCard(totalTasks: 0);
+                  }
+                  return DailyChallengeCard(totalTasks: snap.data!.length);
+                },
+              ),
 
               const SizedBox(height: 18),
 
