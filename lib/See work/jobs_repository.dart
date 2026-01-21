@@ -4,9 +4,15 @@ class JobsRepository {
   final FirebaseFirestore _db;
   JobsRepository(this._db);
 
-  Stream<QuerySnapshot> watchActiveJobs() {
-    return _db.collection('jobs').orderBy('pickupDate').snapshots();
-}
+  Stream<QuerySnapshot> watchActiveJobs({String? userId}) {
+    if (userId == null || userId.isEmpty) {
+      return const Stream.empty();
+    }
+    return _db
+        .collection('jobs')
+        .where('ownerId', isEqualTo: userId)
+        .snapshots();
+  }
 
   Stream<DocumentSnapshot> watchJob(String docId) {
     return _db.collection('jobs').doc(docId).snapshots();

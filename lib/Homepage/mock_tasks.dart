@@ -3,12 +3,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'task_card.dart';
 import 'task_section.dart';
 
-Stream<List<TaskItem>> watchHomepageTasks(FirebaseFirestore db) {
+Stream<List<TaskItem>> watchHomepageTasks(FirebaseFirestore db, {required String userId}) {
   return db
       .collection('jobs')
-      .orderBy('pickupDate')
+      .where('ownerId', isEqualTo: userId)
       .snapshots()
-      .map((snap) => snap.docs.map(_taskItemFromDoc).toList());
+      .map((snap) {
+        final items = snap.docs.map(_taskItemFromDoc).toList();
+        items.sort((a, b) => a.pickupDate.compareTo(b.pickupDate));
+        return items;
+      });
 }
 
 TaskItem _taskItemFromDoc(DocumentSnapshot doc) {

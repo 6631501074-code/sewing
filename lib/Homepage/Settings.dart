@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sewing/Login/Login.dart';
 import 'package:sewing/Login/firestore_Acc.dart';
+import 'package:sewing/session/user_session.dart';
 
 class ProfileMenu extends StatefulWidget {
   const ProfileMenu({super.key});
@@ -17,9 +18,9 @@ class ProfileMenu extends StatefulWidget {
 class _ProfileMenuState extends State<ProfileMenu> {
   final ImagePicker _picker = ImagePicker();
   File? _profileImage;
-  final _usernameC = TextEditingController(text: 'admin');
-  final _nameC = TextEditingController(text: 'Admin User');
-  final _emailC = TextEditingController(text: 'admin@sewing.com');
+  final _usernameC = TextEditingController();
+  final _nameC = TextEditingController();
+  final _emailC = TextEditingController();
   final _passwordC = TextEditingController();
   bool _saving = false;
   bool _uploading = false;
@@ -32,6 +33,12 @@ class _ProfileMenuState extends State<ProfileMenu> {
     _emailC.dispose();
     _passwordC.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
   }
 
   @override
@@ -55,7 +62,9 @@ class _ProfileMenuState extends State<ProfileMenu> {
                     backgroundColor: const Color(0xFFF3F4F6),
                     backgroundImage: _profileImage != null
                         ? FileImage(_profileImage!)
-                        : const AssetImage('asset/img/user.png') as ImageProvider,
+                        : (_photoUrl != null && _photoUrl!.isNotEmpty
+                            ? NetworkImage(_photoUrl!) as ImageProvider
+                            : const AssetImage('asset/img/user.png')),
                   ),
                 ),
               ),
@@ -132,6 +141,19 @@ class _ProfileMenuState extends State<ProfileMenu> {
     );
   }
 
+  Future<void> _loadUser() async {
+    final username = await UserSession.getUsername();
+    if (!mounted) return;
+    if (username != null) {
+      _usernameC.text = username;
+      final doc = await FirebaseFirestore.instance.collection('users').doc(username).get();
+      final data = (doc.data() as Map<String, dynamic>?) ?? {};
+      _nameC.text = (data['name'] ?? '').toString();
+      _emailC.text = (data['email'] ?? '').toString();
+      _photoUrl = (data['photoUrl'] ?? '').toString();
+      setState(() {});
+    }
+  }
   Future<void> _saveProfile() async {
     final username = _usernameC.text.trim();
     final name = _nameC.text.trim();
@@ -153,6 +175,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
         password: password.isEmpty ? null : password,
         photoUrl: _photoUrl,
       );
+      await UserSession.setUsername(username);
       if (!mounted) return;
       _passwordC.clear();
       _showMessage('บันทึกข้อมูลแล้ว');
@@ -165,6 +188,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
   }
 
   void _logout() {
+    UserSession.clear();
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const Login()),

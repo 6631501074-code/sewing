@@ -70,9 +70,8 @@ class _SaveCustomerDialog extends StatefulWidget {
 }
 
 class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
-  // ---- mini theme (ขาว/คลีน) ----
-  static const _surface = Colors.white; // ✅ พื้นหลังขาว
-  static const _fieldBg = Color(0xFFF7F7F8); // เทาอ่อนมาก (เหมือน iOS)
+  static const _surface = Colors.white;
+  static const _fieldBg = Color(0xFFF7F7F8);
   static const _text = Color(0xFF111827);
   static const _muted = Color(0xFF6B7280);
   static const _border = Color(0x1A111827);
@@ -159,8 +158,8 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
         : 'บันทึกลูกค้า';
 
     return Dialog(
-      backgroundColor: _surface, // ✅ ขาว
-      surfaceTintColor: Colors.transparent, // กัน tint บน Material3
+      backgroundColor: _surface,
+      surfaceTintColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       child: Padding(
@@ -198,22 +197,20 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
 
               const SizedBox(height: 14),
 
-              // ✅ ชื่อไทย: keyboard ไทย/ชื่อคน + allow ตัวอักษรไทย/เว้นวรรค/จุด/ขีด
               _field(
                 label: 'ชื่อลูกค้า',
                 controller: _nameC,
-                hint: 'เช่น คุณเอ',
+                hint: 'เช่น คุณแอ',
                 keyboardType: TextInputType.name,
                 textCapitalization: TextCapitalization.words,
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(
-                    RegExp(r"[ก-๙a-zA-Z\s\.\-']"),
+                    RegExp(r"[A-Za-z\u0E00-\u0E7F\s\.\-']"),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
 
-              // ✅ เบอร์โทร: จำกัดตัวเลข/ไทยได้ (ค่อยแปลง) + จำกัดความยาว
               _field(
                 label: 'เบอร์โทร',
                 controller: _phoneC,
@@ -241,7 +238,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
                 children: [
                   Expanded(
                     child: _dateTile(
-                      title: 'วันนัด',
+                      title: 'วันที่นัด',
                       value: _fmtDate(_appointmentDate),
                       onTap: _pickAppointment,
                     ),
@@ -249,7 +246,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _dateTile(
-                      title: 'วันมารับ',
+                      title: 'วันรับ',
                       value: _fmtDate(_pickupDate),
                       onTap: _pickPickup,
                     ),
@@ -262,7 +259,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'ค่าที่วัด',
+                  'ค่าวัด',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
@@ -275,7 +272,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _fieldBg, // ✅ เทาอ่อนมาก
+                  color: _fieldBg,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: _border),
                 ),
@@ -366,7 +363,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
             duration: const Duration(milliseconds: 160),
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
-              color: selected ? Colors.white : _fieldBg, // ✅ ขาว/เทาอ่อน
+              color: selected ? Colors.white : _fieldBg,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: selected ? _text.withOpacity(0.18) : _border,
@@ -388,7 +385,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: _fieldBg, // ✅ เบาลง
+        color: _fieldBg,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _border),
       ),
@@ -430,7 +427,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
             hintText: hint,
             hintStyle: const TextStyle(color: _muted),
             filled: true,
-            fillColor: _fieldBg, // ✅ เทาอ่อนมาก
+            fillColor: _fieldBg,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,
@@ -461,7 +458,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
       child: Ink(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: _fieldBg, // ✅ เทาอ่อนมาก
+          color: _fieldBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: _border),
         ),

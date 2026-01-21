@@ -15,7 +15,8 @@ class FirestoreAccountService {
     required String password,
     String? email,
   }) async {
-    final userRef = _db.collection('users').doc(username);
+    final normalized = _normalizeUsername(username);
+    final userRef = _db.collection('users').doc(normalized);
     final existing = await userRef.get();
     if (existing.exists) {
       throw StateError('USER_EXISTS');
@@ -25,7 +26,7 @@ class FirestoreAccountService {
     final hash = _hashPassword(password, salt);
 
     await userRef.set({
-      'username': username,
+      'username': normalized,
       'name': name,
       'phone': phone,
       if (email != null && email.isNotEmpty) 'email': email,
@@ -69,6 +70,33 @@ class FirestoreAccountService {
           SetOptions(merge: true),
         );
   }
+
+  Future<String?> verifyUser({
+    required String username,
+    required String password,
+  }) async {
+    final normalized = _normalizeUsername(username);
+    var doc = await _db.collection('users').doc(normalized).get();
+
+    if (!doc.exists) {
+      final query = await _db
+          .collection('users')
+          .where('username', isEqualTo: normalized)
+          .limit(1)
+          .get();
+      if (query.docs.isEmpty) return null;
+      doc = query.docs.first;
+    }
+
+    final data = (doc.data() as Map<String, dynamic>? ?? {});
+    final hash = (data['passwordHash'] ?? '').toString();
+    final salt = (data['passwordSalt'] ?? '').toString();
+    if (hash.isEmpty || salt.isEmpty) return null;
+    final ok = _hashPassword(password, salt) == hash;
+    return ok ? doc.id : null;
+  }
+
+  String _normalizeUsername(String username) => username.trim().toLowerCase();
 
   String _hashPassword(String password, String salt) {
     final bytes = utf8.encode('$salt|$password');

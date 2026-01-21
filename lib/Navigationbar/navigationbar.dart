@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sewing/Homepage/Homepage.dart';
 import 'package:sewing/Voice/mic_page.dart';
 import 'package:sewing/See work/WorkQueuePage.dart';
+import 'package:sewing/Dashboard/dashboard.dart';
 
 class Navigationbar extends StatefulWidget {
   const Navigationbar({super.key});
@@ -17,7 +18,8 @@ class _NavigationbarState extends State<Navigationbar> {
     Homepage(),
     MiccPage(),
     WorkQueuePage(),
-    TaskPage(),
+    DashboardPage(),
+    HistoryPage(),
   ];
 
   @override
@@ -152,8 +154,8 @@ class _NavItem extends StatelessWidget {
 // คุณค่อยเอาโค้ดหน้าจริงมาแทนทีหลังได้
 //
 
-class TaskPage extends StatelessWidget {
-  const TaskPage({super.key});
+class HistoryPage extends StatelessWidget {
+  const HistoryPage({super.key});
   @override
   Widget build(BuildContext context) {
     return const Center(child: Text("History Page"));

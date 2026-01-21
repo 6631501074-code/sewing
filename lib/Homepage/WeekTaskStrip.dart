@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sewing/See work/work_job_detail_page.dart';
+import 'package:sewing/session/user_session.dart';
 
 import 'DayTaskInfo.dart';
 import 'mock_tasks.dart';
@@ -22,6 +23,7 @@ class _WeekTaskStripState extends State<WeekTaskStrip> {
 
   late final DateTime _startDate;
   late DateTime _selectedDate;
+  String? _userId;
 
   @override
   void initState() {
@@ -30,6 +32,7 @@ class _WeekTaskStripState extends State<WeekTaskStrip> {
     final today = DateTime(now.year, now.month, now.day);
     _startDate = today.subtract(const Duration(days: 3));
     _selectedDate = today;
+    _loadUser();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final screenWidth = MediaQuery.of(context).size.width;
@@ -45,6 +48,12 @@ class _WeekTaskStripState extends State<WeekTaskStrip> {
     });
   }
 
+  Future<void> _loadUser() async {
+    final user = await UserSession.getUsername();
+    if (!mounted) return;
+    setState(() => _userId = user);
+  }
+
   @override
   Widget build(BuildContext context) {
     final dates = List.generate(7, (i) => _startDate.add(Duration(days: i)));
@@ -52,7 +61,9 @@ class _WeekTaskStripState extends State<WeekTaskStrip> {
     return SizedBox(
       height: 88,
       child: StreamBuilder<List<TaskItem>>(
-        stream: watchHomepageTasks(FirebaseFirestore.instance),
+        stream: _userId == null
+            ? const Stream.empty()
+            : watchHomepageTasks(FirebaseFirestore.instance, userId: _userId!),
         builder: (context, snap) {
           final tasks = snap.data ?? const <TaskItem>[];
           final byDate = _groupByDate(tasks);

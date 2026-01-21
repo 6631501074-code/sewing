@@ -7,6 +7,7 @@ import 'WeekTaskStrip.dart';
 import 'task_section.dart';
 import 'mock_tasks.dart';
 import 'Settings.dart';
+import 'package:sewing/session/user_session.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -17,13 +18,14 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage> {
   final String name = "Preecha S.";
-  final String _userId = 'admin';
   final ScrollController _taskScroll = ScrollController();
   double _titleOpacity = 1.0;
+  String? _userId;
 
   @override
   void initState() {
     super.initState();
+    _loadUser();
 
     _taskScroll.addListener(() {
       final offset = _taskScroll.offset;
@@ -32,6 +34,12 @@ class _HomepageState extends State<Homepage> {
         setState(() => _titleOpacity = newOpacity);
       }
     });
+  }
+
+  Future<void> _loadUser() async {
+    final user = await UserSession.getUsername();
+    if (!mounted) return;
+    setState(() => _userId = user);
   }
 
   @override
@@ -54,7 +62,9 @@ class _HomepageState extends State<Homepage> {
             children: [
               // Top bar
               StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseFirestore.instance.collection('users').doc(_userId).snapshots(),
+                stream: _userId == null
+                    ? const Stream.empty()
+                    : FirebaseFirestore.instance.collection('users').doc(_userId).snapshots(),
                 builder: (context, snap) {
                   final data = (snap.data?.data() as Map<String, dynamic>?) ?? {};
                   final displayName = (data['name'] ?? name).toString();
@@ -121,7 +131,9 @@ class _HomepageState extends State<Homepage> {
 
               // Daily challenge
               StreamBuilder<List<TaskItem>>(
-                stream: watchHomepageTasks(FirebaseFirestore.instance),
+                stream: _userId == null
+                    ? const Stream.empty()
+                    : watchHomepageTasks(FirebaseFirestore.instance, userId: _userId!),
                 builder: (context, snap) {
                   if (!snap.hasData) {
                     return const DailyChallengeCard(totalTasks: 0);
@@ -142,7 +154,7 @@ class _HomepageState extends State<Homepage> {
                 duration: const Duration(milliseconds: 150),
                 opacity: _titleOpacity,
                 child: const Text(
-                  "Today's Task",
+                  "งานของวันนี้",
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
@@ -158,7 +170,9 @@ class _HomepageState extends State<Homepage> {
                   padding: EdgeInsets.zero,
                   children: [
                     StreamBuilder<List<TaskItem>>(
-                      stream: watchHomepageTasks(FirebaseFirestore.instance),
+                      stream: _userId == null
+                          ? const Stream.empty()
+                          : watchHomepageTasks(FirebaseFirestore.instance, userId: _userId!),
                       builder: (context, snap) {
                         if (snap.hasError) {
                           return const Text('Failed to load tasks');

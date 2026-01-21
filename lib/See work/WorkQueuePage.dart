@@ -5,6 +5,7 @@
   import 'jobs_repository.dart';
   import 'work_job.dart';
   import 'work_job_detail_page.dart';
+  import 'package:sewing/session/user_session.dart';
 
   class WorkQueuePage extends StatefulWidget {
     const WorkQueuePage({super.key});
@@ -23,6 +24,7 @@
 
     final _repo = JobsRepository(FirebaseFirestore.instance);
     final _searchC = TextEditingController();
+    String? _userId;
 
     String _q = '';
     _StatusFilter _statusFilter = _StatusFilter.all;
@@ -32,6 +34,18 @@
     void dispose() {
       _searchC.dispose();
       super.dispose();
+    }
+
+    @override
+    void initState() {
+      super.initState();
+      _loadUser();
+    }
+
+    Future<void> _loadUser() async {
+      final user = await UserSession.getUsername();
+      if (!mounted) return;
+      setState(() => _userId = user);
     }
 
     @override
@@ -83,7 +97,7 @@
 
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: _repo.watchActiveJobs(),
+                stream: _repo.watchActiveJobs(userId: _userId),
                 builder: (context, snap) {
                   if (snap.hasError) {
                     return const Center(child: Text('โหลดข้อมูลไม่สำเร็จ'));
