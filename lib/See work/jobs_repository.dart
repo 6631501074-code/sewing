@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:sewing/services/local_notification_service.dart';
 
 class JobsRepository {
   final FirebaseFirestore _db;
@@ -36,6 +37,14 @@ class JobsRepository {
       'status': 'done',
       'completedAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
+    }).then((_) async {
+      final snap = await getJob(docId);
+      final data = (snap.data() as Map<String, dynamic>? ?? {});
+      final title = (data['title'] ?? data['jobId'] ?? docId).toString();
+      await LocalNotificationService.instance.showJobCompleted(
+        jobId: docId,
+        title: title,
+      );
     });
   }
 }

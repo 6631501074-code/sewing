@@ -314,7 +314,7 @@ class _DayHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = DateFormat('EEE, dd MMM', 'en_US').format(date);
+    final text = DateFormat('EEE, dd MMM', 'th_TH').format(date);
     return Row(
       children: [
         Text(
@@ -506,13 +506,13 @@ class _StatusChip extends StatelessWidget {
 
     switch (status) {
       case JobStatus.urgent:
-        label = 'Urgent';
+        label = 'ด่วน';
         fg = const Color(0xFFB42318);
         bg = const Color(0xFFFFF1F1);
         border = const Color(0x33B42318);
         break;
       case JobStatus.doing:
-        label = 'Doing';
+        label = 'กำลังทำ';
         fg = const Color(0xFF1D4ED8);
         bg = const Color(0xFFF0F6FF);
         border = const Color(0x331D4ED8);
@@ -524,7 +524,7 @@ class _StatusChip extends StatelessWidget {
         border = const Color(0x3392400E);
         break;
       case JobStatus.done:
-        label = 'Done';
+        label = 'เสร็จแล้ว';
         fg = const Color(0xFF047857);
         bg = const Color(0xFFECFDF5);
         border = const Color(0x33047857);

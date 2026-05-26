@@ -79,7 +79,7 @@ class _WorkConfirmationPageState extends State<WorkConfirmationPage> {
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('ส่งงานเข้า History แล้ว'),
+                              content: Text('ส่งงานเข้าประวัติแล้ว'),
                             ),
                           );
                         } catch (_) {

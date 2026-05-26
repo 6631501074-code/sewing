@@ -53,7 +53,7 @@ class _HomepageState extends State<Homepage> {
 
   @override
   Widget build(BuildContext context) {
-    final todayText = DateFormat('dd MMM.').format(DateTime.now());
+    final todayText = DateFormat('dd MMM', 'th_TH').format(DateTime.now());
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -106,9 +106,10 @@ class _HomepageState extends State<Homepage> {
                           opacity: _titleOpacity,
                           child: Text(
                             _sameDay(_selectedDate, DateTime.now())
-                                ? "Today's Task"
+                                ? 'งานวันนี้'
                                 : DateFormat(
                                     'EEE, dd MMM',
+                                    'th_TH',
                                   ).format(_selectedDate),
                             style: const TextStyle(
                               fontSize: 20,
@@ -252,7 +253,7 @@ class _TopBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                "Hello, $name",
+                "สวัสดี, $name",
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -260,7 +261,7 @@ class _TopBar extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                "Today $todayText",
+                "วันนี้ $todayText",
                 style: const TextStyle(
                   fontSize: 14,
                   color: Colors.grey,

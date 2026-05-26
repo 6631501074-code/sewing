@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:sewing/services/local_notification_service.dart';
 import 'garment_dialog.dart';
 import 'save_customer_dialog.dart';
 
@@ -67,6 +68,16 @@ class FirestoreService {
     }
 
     await batch.commit();
+    await LocalNotificationService.instance.showJobCreated(
+      jobId: docId,
+      title: title,
+      pickupDate: customer.pickupDate,
+    );
+    await LocalNotificationService.instance.schedulePickupReminder(
+      jobId: docId,
+      title: title,
+      pickupDate: customer.pickupDate,
+    );
 
     return doc.id;
   }

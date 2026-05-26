@@ -108,10 +108,10 @@ class _MicPageState extends State<MiccPage> {
 
         if (e.errorMsg.contains('error_speech_timeout')) {
           _toast(
-            'Speech timeout: Emulator มักไม่ส่งเสียงเข้าไมค์ → แนะนำมือถือจริง/เปิด Host audio input',
+            'หมดเวลารอฟังเสียง: ถ้าใช้อีมูเลเตอร์ให้เปิดเสียงไมค์จากเครื่อง หรือทดสอบบนมือถือจริง',
           );
         } else {
-          _toast('Speech error: ${e.errorMsg}');
+          _toast('ระบบฟังเสียงมีปัญหา: ${e.errorMsg}');
         }
       },
     );
@@ -120,7 +120,7 @@ class _MicPageState extends State<MiccPage> {
     setState(() => _speechReady = ok);
 
     if (!ok) {
-      _toast('Speech ไม่พร้อมใช้งาน (อีมูเลเตอร์/เครื่องอาจไม่รองรับ)');
+      _toast('ระบบฟังเสียงไม่พร้อมใช้งาน');
       return;
     }
 

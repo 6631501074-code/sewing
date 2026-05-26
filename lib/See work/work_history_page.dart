@@ -37,7 +37,7 @@ class _WorkHistoryPageState extends State<WorkHistoryPage> {
         backgroundColor: Colors.white,
         foregroundColor: _text,
         title: const Text(
-          'History',
+          'ประวัติงาน',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
       ),
@@ -139,7 +139,7 @@ class _SearchBox extends StatelessWidget {
       controller: controller,
       onChanged: onChanged,
       decoration: InputDecoration(
-        hintText: 'ค้นหา History',
+        hintText: 'ค้นหาประวัติงาน',
         hintStyle: const TextStyle(
           color: Color(0xFF6B7280),
           fontWeight: FontWeight.w700,

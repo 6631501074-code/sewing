@@ -40,7 +40,7 @@ Future<GarmentType?> showGarmentDialog(BuildContext context) {
                 title: 'เสื้อ',
                 assetPath: 'asset/img/img4.png',
                 enabled: true,
-                badgeText: 'Ready',
+                badgeText: 'พร้อม',
                 onTap: () => Navigator.pop(ctx, GarmentType.shirt),
               ),
 
@@ -51,7 +51,7 @@ Future<GarmentType?> showGarmentDialog(BuildContext context) {
                 title: 'กางเกงราชการ',
                 assetPath: 'asset/img/img3.png',
                 enabled: true,
-                badgeText: 'Ready',
+                badgeText: 'พร้อม',
                 onTap: () => Navigator.pop(ctx, GarmentType.pantsOfficial),
               ),
 

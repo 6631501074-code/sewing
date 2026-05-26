@@ -118,13 +118,13 @@ class TaskCard extends StatelessWidget {
     switch (s) {
       case TaskStatus.urgent:
         return _StatusUI(
-          "Urgent",
+          "ด่วน",
           const Color(0xFFFFE5E5),
           const Color(0xFFCC1F1F),
         );
       case TaskStatus.doing:
         return _StatusUI(
-          "Doing",
+          "กำลังทำ",
           const Color(0xFFE6F0FF),
           const Color(0xFF1E63D5),
         );
@@ -136,7 +136,7 @@ class TaskCard extends StatelessWidget {
         );
       case TaskStatus.done:
         return _StatusUI(
-          "Done",
+          "เสร็จแล้ว",
           const Color(0xFFE7F8EF),
           const Color(0xFF168A47),
         );
