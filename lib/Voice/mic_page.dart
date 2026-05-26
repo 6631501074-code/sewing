@@ -396,6 +396,7 @@ class _MicPageState extends State<MiccPage> {
   @override
   Widget build(BuildContext context) {
     final canUse = _selected != GarmentType.none;
+    final canPop = Navigator.canPop(context);
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -404,7 +405,12 @@ class _MicPageState extends State<MiccPage> {
         body: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 40),
+              _TopBar(
+                canPop: canPop,
+                title: _isPackageFolderFlow
+                    ? 'เพิ่มงานใน ${widget.packageFolderName ?? 'งานเหมา'}'
+                    : 'วัดตัว',
+              ),
 
               // เลือกประเภท
               Padding(
@@ -591,6 +597,51 @@ class _MicPageState extends State<MiccPage> {
               size: 32,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TopBar extends StatelessWidget {
+  final bool canPop;
+  final String title;
+
+  const _TopBar({required this.canPop, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 6, 16, 14),
+      child: SizedBox(
+        height: 48,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: canPop
+                  ? IconButton(
+                      tooltip: 'ย้อนกลับ',
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      onPressed: () => Navigator.maybePop(context),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF111827),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

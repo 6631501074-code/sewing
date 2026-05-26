@@ -121,6 +121,7 @@ class _WorkHistoryPageState extends State<WorkHistoryPage> {
       job.customerName,
       job.customerPhone,
       job.packageName,
+      job.notes,
       workCategoryLabel(job.category),
     ].join(' ').toLowerCase();
     return text.contains(q);

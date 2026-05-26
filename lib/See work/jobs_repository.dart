@@ -101,8 +101,11 @@ class JobsRepository {
         .collection('jobFolders')
         .doc(folderId)
         .collection('jobs')
-        .orderBy('pickupDate')
         .snapshots();
+  }
+
+  Future<QuerySnapshot> getPackageFolderJobs(String folderId) {
+    return _db.collection('jobFolders').doc(folderId).collection('jobs').get();
   }
 
   // ✅ ได้ข้อมูลโฟลเดอร์

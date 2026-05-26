@@ -188,6 +188,7 @@ class _WorkQueuePageState extends State<WorkQueuePage> {
       job.jobId,
       job.title,
       job.packageName,
+      job.notes,
       workCategoryLabel(job.category),
     ].join(' ').toLowerCase();
     return text.contains(q);

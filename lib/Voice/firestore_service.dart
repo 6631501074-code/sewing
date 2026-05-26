@@ -51,6 +51,7 @@ class FirestoreService {
       'garmentType': garmentType.name, // pantsOfficial / shirt / ...
 
       'measures': measures,
+      'notes': customer.notes,
 
       'status': status,
       'createdAt': FieldValue.serverTimestamp(),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:sewing/Voice/thai_text_input_formatter.dart';
 
 Future<String?> showPackageFolderDialog(BuildContext context) {
   final controller = TextEditingController();
@@ -35,12 +37,20 @@ Future<String?> showPackageFolderDialog(BuildContext context) {
 
               TextField(
                 controller: controller,
+                autofocus: true,
+                keyboardType: TextInputType.text,
+                textCapitalization: TextCapitalization.words,
+                inputFormatters: <TextInputFormatter>[
+                  ThaiTextInputFormatter.name,
+                ],
                 decoration: InputDecoration(
                   hintText: 'เช่น ชุดสูท สต๊อก 100 ชุด',
                   filled: true,
                   fillColor: const Color(0xFFF4F4F6),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -77,8 +87,10 @@ Future<String?> showPackageFolderDialog(BuildContext context) {
                     ),
                     child: const Text(
                       'ยกเลิก',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -98,7 +110,10 @@ Future<String?> showPackageFolderDialog(BuildContext context) {
                     ),
                     child: const Text(
                       'สร้าง',
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ],

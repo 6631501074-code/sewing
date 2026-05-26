@@ -132,6 +132,30 @@ class _WorkJobDetailPageState extends State<WorkJobDetailPage> {
                   }).toList(),
                 ),
               ),
+              if (job.notes.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'รายละเอียดเพิ่มเติม',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: _text.withOpacity(0.85),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _Card(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      job.notes,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: _text,
+                        height: 1.25,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
 
               if (job.status == JobStatus.doing ||

@@ -58,8 +58,10 @@ class WorkJob {
   final String garmentType; // เก็บเป็น string ง่ายต่อ firestore
   final DateTime appointmentDate;
   final DateTime pickupDate;
+  final DateTime createdAt;
   final JobStatus status;
   final Map<String, dynamic> measures;
+  final String notes;
 
   WorkJob({
     required this.id,
@@ -73,14 +75,17 @@ class WorkJob {
     required this.garmentType,
     required this.appointmentDate,
     required this.pickupDate,
+    required this.createdAt,
     required this.status,
     required this.measures,
+    required this.notes,
   });
 
   factory WorkJob.fromDoc(DocumentSnapshot doc) {
     final data = (doc.data() as Map<String, dynamic>? ?? {});
     final Timestamp? ap = data['appointmentDate'];
     final Timestamp? pu = data['pickupDate'];
+    final Timestamp? created = data['createdAt'];
 
     return WorkJob(
       id: doc.id,
@@ -94,8 +99,10 @@ class WorkJob {
       garmentType: (data['garmentType'] ?? 'pantsOfficial').toString(),
       appointmentDate: (ap?.toDate()) ?? DateTime.now(),
       pickupDate: (pu?.toDate()) ?? DateTime.now(),
+      createdAt: (created?.toDate()) ?? (pu?.toDate()) ?? DateTime.now(),
       status: jobStatusFrom((data['status'] ?? 'doing').toString()),
       measures: Map<String, dynamic>.from(data['measures'] ?? const {}),
+      notes: (data['notes'] ?? '').toString(),
     );
   }
 }

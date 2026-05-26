@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'garment_dialog.dart';
 import 'thai_number_formatter.dart';
+import 'thai_text_input_formatter.dart';
 
 enum WorkCategory { daily, package }
 
@@ -23,6 +24,7 @@ class CustomerSaveResult {
   final WorkCategory category;
   final String packageName;
   final String packageFolderId;
+  final String notes;
 
   CustomerSaveResult({
     required this.name,
@@ -33,6 +35,7 @@ class CustomerSaveResult {
     required this.category,
     this.packageName = '',
     this.packageFolderId = '',
+    this.notes = '',
   });
 
   Map<String, dynamic> toJson() => {
@@ -44,6 +47,7 @@ class CustomerSaveResult {
     'category': category.name,
     'packageName': packageName,
     'packageFolderId': packageFolderId,
+    'notes': notes,
   };
 }
 
@@ -103,6 +107,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
   final _phoneC = TextEditingController();
   final _depositC = TextEditingController();
   final _packageNameC = TextEditingController();
+  final _notesC = TextEditingController();
 
   late DateTime _appointmentDate;
   late DateTime _pickupDate;
@@ -125,6 +130,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
     _phoneC.dispose();
     _depositC.dispose();
     _packageNameC.dispose();
+    _notesC.dispose();
     super.dispose();
   }
 
@@ -155,6 +161,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
     final name = _nameC.text.trim();
     final phone = _phoneC.text.trim();
     final packageName = _packageNameC.text.trim();
+    final notes = _notesC.text.trim();
 
     final depositStr = ThaiToArabicDigitsFormatter.to2dpOrEmpty(_depositC.text);
     final deposit = double.tryParse(depositStr.isEmpty ? '0' : depositStr) ?? 0;
@@ -184,6 +191,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
         category: _category,
         packageName: packageName,
         packageFolderId: widget.packageFolderId,
+        notes: notes,
       ),
     );
   }
@@ -239,6 +247,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
                   hint: 'เช่น เหมาชุดทีมร้าน A',
                   keyboardType: TextInputType.text,
                   textCapitalization: TextCapitalization.words,
+                  inputFormatters: [ThaiTextInputFormatter.name],
                   readOnly: widget.lockCategory,
                 ),
                 const SizedBox(height: 10),
@@ -251,11 +260,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
                 hint: 'เช่น คุณเอ',
                 keyboardType: TextInputType.name,
                 textCapitalization: TextCapitalization.words,
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(
-                    RegExp(r"[ก-๙a-zA-Z\s\.\-']"),
-                  ),
-                ],
+                inputFormatters: [ThaiTextInputFormatter.name],
               ),
               const SizedBox(height: 10),
 
@@ -354,6 +359,17 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
                     );
                   }).toList(),
                 ),
+              ),
+
+              const SizedBox(height: 14),
+
+              _field(
+                label: 'รายละเอียดเพิ่มเติม',
+                controller: _notesC,
+                hint: 'เช่น ทรงที่ต้องการ สีผ้า หรือหมายเหตุถึงช่าง',
+                keyboardType: TextInputType.multiline,
+                inputFormatters: [ThaiTextInputFormatter.note],
+                maxLines: 3,
               ),
 
               const SizedBox(height: 16),
@@ -460,6 +476,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
     TextCapitalization textCapitalization = TextCapitalization.none,
     List<TextInputFormatter>? inputFormatters,
     bool readOnly = false,
+    int maxLines = 1,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -478,6 +495,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
           textCapitalization: textCapitalization,
           inputFormatters: inputFormatters,
           readOnly: readOnly,
+          maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(color: _muted),
