@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'thai_number_formatter.dart';
 
-class MeasureSlide extends StatelessWidget {
+class MeasureSlide extends StatefulWidget {
   final String label;
   final String unit;
   final TextEditingController controller;
@@ -18,10 +18,40 @@ class MeasureSlide extends StatelessWidget {
     required this.onDone,
   });
 
+  @override
+  State<MeasureSlide> createState() => _MeasureSlideState();
+}
+
+class _MeasureSlideState extends State<MeasureSlide> {
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void didUpdateWidget(covariant MeasureSlide oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // เมื่อเปลี่ยนเป็นฟิลด์ปัจจุบัน ให้ auto-focus
+    if (widget.isCurrent && !oldWidget.isCurrent) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _focusNode.requestFocus();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
   void _formatTo2dp() {
-    final formatted = ThaiToArabicDigitsFormatter.to2dpOrEmpty(controller.text);
-    controller.text = formatted;
-    controller.selection = TextSelection.collapsed(offset: controller.text.length);
+    final formatted = ThaiToArabicDigitsFormatter.to2dpOrEmpty(widget.controller.text);
+    widget.controller.text = formatted;
+    widget.controller.selection = TextSelection.collapsed(offset: widget.controller.text.length);
   }
 
   @override
@@ -33,9 +63,9 @@ class MeasureSlide extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              label,
+              widget.label,
               style: TextStyle(
-                fontSize: isCurrent ? 56 : 40,
+                fontSize: widget.isCurrent ? 56 : 40,
                 fontWeight: FontWeight.w900,
                 height: 1.0,
                 color: Colors.black,
@@ -43,7 +73,7 @@ class MeasureSlide extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              '(หน่วย: $unit)',
+              '(หน่วย: ${widget.unit})',
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.black.withOpacity(0.45),
@@ -55,7 +85,8 @@ class MeasureSlide extends StatelessWidget {
             SizedBox(
               width: 240,
               child: TextField(
-                controller: controller,
+                focusNode: _focusNode,
+                controller: widget.controller,
                 textAlign: TextAlign.center,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: <TextInputFormatter>[
@@ -80,11 +111,7 @@ class MeasureSlide extends StatelessWidget {
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) {
                   _formatTo2dp();
-                  onDone();
-                },
-                onEditingComplete: () {
-                  _formatTo2dp();
-                  FocusScope.of(context).unfocus();
+                  widget.onDone();
                 },
               ),
             ),

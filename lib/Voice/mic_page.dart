@@ -40,22 +40,52 @@ class _MicPageState extends State<MiccPage> {
 
   Completer<void>? _waitPageChange;
 
-  final List<_MeasureField> _fields = const [
-    _MeasureField(keyName: 'เอว', label: 'เอว', unit: 'นิ้ว'),
-    _MeasureField(keyName: 'สะโพก', label: 'สะโพก', unit: 'นิ้ว'),
-    _MeasureField(keyName: 'เป้า', label: 'เป้า', unit: 'นิ้ว'),
-    _MeasureField(keyName: 'ต้นขา', label: 'ต้นขา', unit: 'นิ้ว'),
-    _MeasureField(keyName: 'ยาว', label: 'ยาว', unit: 'นิ้ว'),
-    _MeasureField(keyName: 'ขากว้าง', label: 'ขากว้าง', unit: 'นิ้ว'),
-  ];
+  late Map<String, TextEditingController> _controllers = {};
 
-  late final Map<String, TextEditingController> _controllers = {
-    for (final f in _fields) f.keyName: TextEditingController(),
-  };
+  List<_MeasureField> get _fields {
+    if (_selected == GarmentType.shirt) {
+      return const [
+        _MeasureField(keyName: 'อก', label: 'อก', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'รอบเอว', label: 'รอบเอว', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'รอบชาย', label: 'รอบชาย', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'บ่า', label: 'บ่า', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'แขนยาว', label: 'แขนยาว', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'แขนกว้าง', label: 'แขนกว้าง', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'รอบศอก', label: 'รอบศอก', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'ต้นแขน', label: 'ต้นแขน', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'เสื้อยาว', label: 'เสื้อยาว', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'บ่าหน้า', label: 'บ่าหน้า', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'บ่าหลัง', label: 'บ่าหลัง', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'ยาวหลัง', label: 'ยาวหลัง', unit: 'นิ้ว'),
+      ];
+    } else {
+      // กางเกง
+      return const [
+        _MeasureField(keyName: 'เอว', label: 'เอว', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'สะโพก', label: 'สะโพก', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'เป้า', label: 'เป้า', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'ต้นขา', label: 'ต้นขา', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'ยาว', label: 'ยาว', unit: 'นิ้ว'),
+        _MeasureField(keyName: 'ขากว้าง', label: 'ขากว้าง', unit: 'นิ้ว'),
+      ];
+    }
+  }
+
+  void _initializeControllers() {
+    // ล้างการควบคุมเก่าก่อน (ถ้ามี)
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
+    // สร้างการควบคุมใหม่สำหรับฟิลด์ปัจจุบัน
+    _controllers = {
+      for (final f in _fields) f.keyName: TextEditingController(),
+    };
+  }
 
   @override
   void initState() {
     super.initState();
+    _initializeControllers();
     _initSpeechFlow();
     if (widget.openPickerRequest > 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -153,7 +183,14 @@ class _MicPageState extends State<MiccPage> {
   Future<void> _ensureSelected() async {
     if (_selected != GarmentType.none) return;
     final result = await showGarmentDialog(context);
-    if (result != null) setState(() => _selected = result);
+    if (result != null) {
+      setState(() {
+        _selected = result;
+        _initializeControllers();
+        _pageIndex = 0;
+        _pageController.jumpToPage(0);
+      });
+    }
   }
 
   Future<void> _showGarmentPickerFromNavigation() async {
@@ -161,7 +198,12 @@ class _MicPageState extends State<MiccPage> {
     _pickerOpening = true;
     final result = await showGarmentDialog(context);
     if (mounted && result != null) {
-      setState(() => _selected = result);
+      setState(() {
+        _selected = result;
+        _initializeControllers();
+        _pageIndex = 0;
+        _pageController.jumpToPage(0);
+      });
     }
     _pickerOpening = false;
   }
@@ -340,7 +382,14 @@ class _MicPageState extends State<MiccPage> {
                   borderRadius: BorderRadius.circular(16),
                   onTap: () async {
                     final result = await showGarmentDialog(context);
-                    if (result != null) setState(() => _selected = result);
+                    if (result != null) {
+                      setState(() {
+                        _selected = result;
+                        _initializeControllers();
+                        _pageIndex = 0;
+                        _pageController.jumpToPage(0);
+                      });
+                    }
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
