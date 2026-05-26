@@ -22,6 +22,7 @@ class CustomerSaveResult {
   final DateTime pickupDate;
   final WorkCategory category;
   final String packageName;
+  final String packageFolderId;
 
   CustomerSaveResult({
     required this.name,
@@ -31,6 +32,7 @@ class CustomerSaveResult {
     required this.pickupDate,
     required this.category,
     this.packageName = '',
+    this.packageFolderId = '',
   });
 
   Map<String, dynamic> toJson() => {
@@ -41,6 +43,7 @@ class CustomerSaveResult {
     'pickupDate': pickupDate.toIso8601String(),
     'category': category.name,
     'packageName': packageName,
+    'packageFolderId': packageFolderId,
   };
 }
 
@@ -48,22 +51,40 @@ Future<CustomerSaveResult?> showSaveCustomerDialog({
   required BuildContext context,
   required GarmentType garmentType,
   required Map<String, String> measures,
+  WorkCategory initialCategory = WorkCategory.daily,
+  String initialPackageName = '',
+  String packageFolderId = '',
+  bool lockCategory = false,
 }) {
   return showDialog<CustomerSaveResult>(
     context: context,
     barrierDismissible: true,
-    builder: (ctx) =>
-        _SaveCustomerDialog(garmentType: garmentType, measures: measures),
+    builder: (ctx) => _SaveCustomerDialog(
+      garmentType: garmentType,
+      measures: measures,
+      initialCategory: initialCategory,
+      initialPackageName: initialPackageName,
+      packageFolderId: packageFolderId,
+      lockCategory: lockCategory,
+    ),
   );
 }
 
 class _SaveCustomerDialog extends StatefulWidget {
   final GarmentType garmentType;
   final Map<String, String> measures;
+  final WorkCategory initialCategory;
+  final String initialPackageName;
+  final String packageFolderId;
+  final bool lockCategory;
 
   const _SaveCustomerDialog({
     required this.garmentType,
     required this.measures,
+    required this.initialCategory,
+    required this.initialPackageName,
+    required this.packageFolderId,
+    required this.lockCategory,
   });
 
   @override
@@ -86,7 +107,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
   late DateTime _appointmentDate;
   late DateTime _pickupDate;
 
-  WorkCategory _category = WorkCategory.daily;
+  late WorkCategory _category;
 
   @override
   void initState() {
@@ -94,6 +115,8 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
     final now = DateTime.now();
     _appointmentDate = DateTime(now.year, now.month, now.day);
     _pickupDate = _appointmentDate;
+    _category = widget.initialCategory;
+    _packageNameC.text = widget.initialPackageName.trim();
   }
 
   @override
@@ -160,6 +183,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
         pickupDate: _pickupDate,
         category: _category,
         packageName: packageName,
+        packageFolderId: widget.packageFolderId,
       ),
     );
   }
@@ -215,6 +239,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
                   hint: 'เช่น เหมาชุดทีมร้าน A',
                   keyboardType: TextInputType.text,
                   textCapitalization: TextCapitalization.words,
+                  readOnly: widget.lockCategory,
                 ),
                 const SizedBox(height: 10),
               ],
@@ -384,7 +409,9 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
       return Expanded(
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () => setState(() => _category = value),
+          onTap: widget.lockCategory
+              ? null
+              : () => setState(() => _category = value),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -432,6 +459,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
     TextInputType? keyboardType,
     TextCapitalization textCapitalization = TextCapitalization.none,
     List<TextInputFormatter>? inputFormatters,
+    bool readOnly = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,6 +477,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
           keyboardType: keyboardType,
           textCapitalization: textCapitalization,
           inputFormatters: inputFormatters,
+          readOnly: readOnly,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(color: _muted),

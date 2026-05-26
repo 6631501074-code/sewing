@@ -13,8 +13,19 @@ import 'save_customer_dialog.dart';
 
 class MiccPage extends StatefulWidget {
   final int openPickerRequest;
+  final GarmentType initialGarmentType;
+  final WorkCategory initialCategory;
+  final String? packageFolderId;
+  final String? packageFolderName;
 
-  const MiccPage({super.key, this.openPickerRequest = 0});
+  const MiccPage({
+    super.key,
+    this.openPickerRequest = 0,
+    this.initialGarmentType = GarmentType.none,
+    this.initialCategory = WorkCategory.daily,
+    this.packageFolderId,
+    this.packageFolderName,
+  });
 
   @override
   State<MiccPage> createState() => _MicPageState();
@@ -24,6 +35,9 @@ class _MicPageState extends State<MiccPage> {
   final _fs = FirestoreService();
 
   GarmentType _selected = GarmentType.none;
+
+  bool get _isPackageFolderFlow =>
+      (widget.packageFolderId ?? '').trim().isNotEmpty;
 
   final PageController _pageController = PageController(viewportFraction: 0.78);
   int _pageIndex = 0;
@@ -85,6 +99,7 @@ class _MicPageState extends State<MiccPage> {
   @override
   void initState() {
     super.initState();
+    _selected = widget.initialGarmentType;
     _initializeControllers();
     _initSpeechFlow();
     if (widget.openPickerRequest > 0) {
@@ -97,6 +112,15 @@ class _MicPageState extends State<MiccPage> {
   @override
   void didUpdateWidget(covariant MiccPage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.initialGarmentType != oldWidget.initialGarmentType &&
+        widget.initialGarmentType != GarmentType.none) {
+      setState(() {
+        _selected = widget.initialGarmentType;
+        _initializeControllers();
+        _pageIndex = 0;
+        _pageController.jumpToPage(0);
+      });
+    }
     if (widget.openPickerRequest != oldWidget.openPickerRequest) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showGarmentPickerFromNavigation();
@@ -341,6 +365,12 @@ class _MicPageState extends State<MiccPage> {
       context: context,
       garmentType: _selected,
       measures: measures,
+      initialCategory: _isPackageFolderFlow
+          ? WorkCategory.package
+          : widget.initialCategory,
+      initialPackageName: widget.packageFolderName ?? '',
+      packageFolderId: widget.packageFolderId ?? '',
+      lockCategory: _isPackageFolderFlow,
     );
 
     if (result == null) return;
@@ -352,6 +382,7 @@ class _MicPageState extends State<MiccPage> {
         measures: measures,
         garmentType: _selected,
         status: 'doing',
+        packageFolderId: widget.packageFolderId,
       );
 
       debugPrint('✅ Saved jobId=$jobId');

@@ -25,7 +25,7 @@ class JobsRepository {
   }
 
   Future<void> moveToConfirmation(String docId) {
-    return _db.collection('jobs').doc(docId).update({
+    return _updateJobEverywhere(docId, {
       'status': 'confirming',
       'acceptedAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -33,7 +33,7 @@ class JobsRepository {
   }
 
   Future<void> markDone(String docId) {
-    return _db.collection('jobs').doc(docId).update({
+    return _updateJobEverywhere(docId, {
       'status': 'done',
       'completedAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -46,5 +46,77 @@ class JobsRepository {
         title: title,
       );
     });
+  }
+
+  Future<void> _updateJobEverywhere(
+    String docId,
+    Map<String, dynamic> values,
+  ) async {
+    final jobRef = _db.collection('jobs').doc(docId);
+    final snap = await jobRef.get();
+    final data = snap.data() ?? {};
+    final packageFolderId = (data['packageFolderId'] ?? '').toString().trim();
+
+    final batch = _db.batch();
+    batch.update(jobRef, values);
+
+    if (packageFolderId.isNotEmpty) {
+      final folderRef = _db.collection('jobFolders').doc(packageFolderId);
+      batch.set(
+        folderRef.collection('jobs').doc(docId),
+        values,
+        SetOptions(merge: true),
+      );
+      batch.set(folderRef, {
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+
+    await batch.commit();
+  }
+
+  Future<String> createPackageFolder(String folderName) async {
+    final name = folderName.trim();
+    final folderId = _safeFolderId(name);
+    await _db.collection('jobFolders').doc(folderId).set({
+      'name': name,
+      'category': 'package',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    return folderId;
+  }
+
+  // ✅ ดูรายการโฟลเดอร์งานเหมา
+  Stream<QuerySnapshot> watchPackageFolders() {
+    return _db
+        .collection('jobFolders')
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
+  // ✅ ดูรายการงานในโฟลเดอร์งานเหมา
+  Stream<QuerySnapshot> watchPackageFolderJobs(String folderId) {
+    return _db
+        .collection('jobFolders')
+        .doc(folderId)
+        .collection('jobs')
+        .orderBy('pickupDate')
+        .snapshots();
+  }
+
+  // ✅ ได้ข้อมูลโฟลเดอร์
+  Future<DocumentSnapshot> getPackageFolder(String folderId) {
+    return _db.collection('jobFolders').doc(folderId).get();
+  }
+
+  String _safeFolderId(String name) {
+    final cleaned = name
+        .trim()
+        .replaceAll(RegExp(r'[/\\#?]'), '-')
+        .replaceAll(RegExp(r'\s+'), '_');
+    return cleaned.isEmpty
+        ? 'package_${DateTime.now().millisecondsSinceEpoch}'
+        : cleaned;
   }
 }

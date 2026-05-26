@@ -11,14 +11,21 @@ class FirestoreService {
     required Map<String, String> measures,
     required GarmentType garmentType,
     String status = 'doing', // urgent | doing | done
+    String? packageFolderId,
   }) async {
     final pickupKey = _dateKey(customer.pickupDate);
     final autoId = _db.collection('jobs').doc().id;
     final docId = '${pickupKey}_${autoId.substring(0, 8)}';
     final doc = _db.collection('jobs').doc(docId);
     final packageName = customer.packageName.trim();
-    final packageFolderId = customer.category == WorkCategory.package
-        ? _safeFolderId(packageName)
+    final explicitFolderId = (packageFolderId ?? '').trim();
+    final customerFolderId = customer.packageFolderId.trim();
+    final resolvedPackageFolderId = customer.category == WorkCategory.package
+        ? explicitFolderId.isNotEmpty
+              ? explicitFolderId
+              : customerFolderId.isNotEmpty
+              ? customerFolderId
+              : _safeFolderId(packageName)
         : '';
     final title =
         customer.category == WorkCategory.package && packageName.isNotEmpty
@@ -40,7 +47,7 @@ class FirestoreService {
 
       'category': customer.category.name, // daily / package
       'packageName': packageName,
-      'packageFolderId': packageFolderId,
+      'packageFolderId': resolvedPackageFolderId,
       'garmentType': garmentType.name, // pantsOfficial / shirt / ...
 
       'measures': measures,
@@ -54,7 +61,9 @@ class FirestoreService {
     batch.set(doc, payload);
 
     if (customer.category == WorkCategory.package) {
-      final folderRef = _db.collection('jobFolders').doc(packageFolderId);
+      final folderRef = _db
+          .collection('jobFolders')
+          .doc(resolvedPackageFolderId);
       batch.set(folderRef, {
         'name': packageName,
         'category': customer.category.name,
@@ -108,5 +117,21 @@ class FirestoreService {
       case GarmentType.none:
         return 'งานตัดเย็บ';
     }
+  }
+
+  // ✅ สร้างโฟลเดอร์งานเหมา
+  Future<String> createPackageFolder(String folderName) async {
+    final name = folderName.trim();
+    final folderId = _safeFolderId(name);
+    final folderRef = _db.collection('jobFolders').doc(folderId);
+
+    await folderRef.set({
+      'name': name,
+      'category': 'package',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    return folderId;
   }
 }
