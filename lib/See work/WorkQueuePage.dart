@@ -5,9 +5,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'jobs_repository.dart';
 import 'work_job.dart';
 import 'work_job_detail_page.dart';
+import 'create_job_dialog.dart';
+import 'package_folder_dialog.dart';
+import 'package_folder_page.dart';
+import 'package:sewing/Voice/mic_page.dart';
 
 class WorkQueuePage extends StatefulWidget {
-  const WorkQueuePage({super.key});
+  final VoidCallback? onOpenConfirmation;
+
+  const WorkQueuePage({super.key, this.onOpenConfirmation});
 
   @override
   State<WorkQueuePage> createState() => _WorkQueuePageState();
@@ -15,18 +21,55 @@ class WorkQueuePage extends StatefulWidget {
 
 class _WorkQueuePageState extends State<WorkQueuePage> {
   static const _text = Color(0xFF111827);
-  static const _muted = Color(0xFF6B7280);
-  static const _line = Color(0x14111827);
 
   final _repo = JobsRepository(FirebaseFirestore.instance);
   final _searchC = TextEditingController();
 
   String _q = '';
+  WorkCategory? _categoryFilter;
 
   @override
   void dispose() {
     _searchC.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleCreateJob() async {
+    final result = await showCreateJobDialog(context);
+    if (!mounted || result == null) return;
+
+    if (result == CreateJobResult.daily) {
+      // ✅ งานรายวัน - ไปหน้าวัดตัว
+      if (!mounted) return;
+      // ใช้ Navigator.push เพื่อไปหน้าวัดตัวโดยตรง
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MiccPage()),
+      );
+    } else if (result == CreateJobResult.package) {
+      // ✅ งานเหมา - ขอชื่อโฟลเดอร์
+      if (!mounted) return;
+      final folderName = await showPackageFolderDialog(context);
+      if (!mounted || folderName == null) return;
+
+      try {
+        final folderId = await _repo.createPackageFolder(folderName);
+
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                PackageFolderPage(folderId: folderId, folderName: folderName),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('สร้างโฟลเดอร์ไม่สำเร็จ: $e')));
+      }
+    }
   }
 
   @override
@@ -37,7 +80,10 @@ class _WorkQueuePageState extends State<WorkQueuePage> {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: _text,
-        title: const Text('รายการงาน', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text(
+          'รายการงาน',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
       ),
       body: Column(
         children: [
@@ -49,11 +95,18 @@ class _WorkQueuePageState extends State<WorkQueuePage> {
               onChanged: (v) => setState(() => _q = v.trim().toLowerCase()),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            child: _CategoryFilter(
+              selected: _categoryFilter,
+              onChanged: (value) => setState(() => _categoryFilter = value),
+            ),
+          ),
 
           // ✅ List
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: _repo.watchActiveJobs(),
+              stream: _repo.watchQueueJobs(),
               builder: (context, snap) {
                 if (snap.hasError) {
                   return const Center(child: Text('โหลดข้อมูลไม่สำเร็จ'));
@@ -62,56 +115,56 @@ class _WorkQueuePageState extends State<WorkQueuePage> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final docs = snap.data!.docs;
-                var jobs = docs.map((d) => WorkJob.fromDoc(d)).toList();
+                final showFolders =
+                    _categoryFilter == null ||
+                    _categoryFilter == WorkCategory.package;
+                final showDailyJobs =
+                    _categoryFilter == null ||
+                    _categoryFilter == WorkCategory.daily;
 
-                // ✅ filter by search (name OR jobId OR title)
+                var jobs = snap.data!.docs
+                    .map((d) => WorkJob.fromDoc(d))
+                    .where(
+                      (j) =>
+                          j.status == JobStatus.doing ||
+                          j.status == JobStatus.urgent,
+                    )
+                    .where(
+                      (j) => showDailyJobs && j.category == WorkCategory.daily,
+                    )
+                    .toList();
+
                 if (_q.isNotEmpty) {
-                  jobs = jobs.where((j) {
-                    final name = j.customerName.toLowerCase();
-                    final id = j.jobId.toLowerCase();
-                    final title = j.title.toLowerCase();
-                    return name.contains(_q) || id.contains(_q) || title.contains(_q);
-                  }).toList();
+                  jobs = jobs.where((j) => _matchesJobQuery(j, _q)).toList();
                 }
 
-                // ✅ group by pickup date (ตัดเวลา)
-                final grouped = _groupByDate(jobs);
-
-                if (grouped.isEmpty) {
-                  return const Center(child: Text('ไม่พบรายการ'));
+                if (!showFolders) {
+                  return _buildQueueList(jobs: jobs, folders: const []);
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                  itemCount: grouped.length,
-                  itemBuilder: (context, index) {
-                    final entry = grouped[index];
-                    final day = entry.key;
-                    final items = entry.value;
+                return StreamBuilder<QuerySnapshot>(
+                  stream: _repo.watchPackageFolders(),
+                  builder: (context, folderSnap) {
+                    if (folderSnap.hasError) {
+                      return const Center(child: Text('โหลดข้อมูลไม่สำเร็จ'));
+                    }
+                    if (!folderSnap.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _DayHeader(date: day),
-                        const SizedBox(height: 10),
-                        ...items.map((j) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: _JobCard(
-                                job: j,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => WorkJobDetailPage(jobId: j.id),
-                                    ),
-                                  );
-                                },
-                              ),
-                            )),
-                        const SizedBox(height: 6),
-                      ],
-                    );
+                    var folders = folderSnap.data!.docs
+                        .map((d) => _PackageFolder.fromDoc(d))
+                        .toList();
+
+                    if (_q.isNotEmpty) {
+                      folders = folders
+                          .where(
+                            (folder) => folder.name.toLowerCase().contains(_q),
+                          )
+                          .toList();
+                    }
+
+                    return _buildQueueList(jobs: jobs, folders: folders);
                   },
                 );
               },
@@ -119,17 +172,314 @@ class _WorkQueuePageState extends State<WorkQueuePage> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _handleCreateJob,
+        backgroundColor: Colors.blueAccent,
+        tooltip: 'เพิ่มงานใหม่',
+        child: const Icon(Icons.add, size: 28),
+      ),
+    );
+  }
+
+  bool _matchesJobQuery(WorkJob job, String q) {
+    final text = [
+      job.customerName,
+      job.customerPhone,
+      job.jobId,
+      job.title,
+      job.packageName,
+      job.notes,
+      workCategoryLabel(job.category),
+    ].join(' ').toLowerCase();
+    return text.contains(q);
+  }
+
+  Widget _buildQueueList({
+    required List<WorkJob> jobs,
+    required List<_PackageFolder> folders,
+  }) {
+    final grouped = _groupByDate(jobs);
+
+    if (folders.isEmpty && grouped.isEmpty) {
+      return const Center(child: Text('ไม่พบรายการ'));
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      children: [
+        if (folders.isNotEmpty) ...[
+          const _SectionHeader(label: 'โฟลเดอร์งานเหมา'),
+          const SizedBox(height: 10),
+          ...folders.map(
+            (folder) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _PackageFolderCard(
+                folder: folder,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PackageFolderPage(
+                        folderId: folder.id,
+                        folderName: folder.name,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+        ],
+        ...grouped.map((entry) {
+          final day = entry.key;
+          final items = entry.value;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _DayHeader(date: day),
+              const SizedBox(height: 10),
+              ...items.map(
+                (j) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _JobCard(
+                    job: j,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => WorkJobDetailPage(
+                            jobId: j.id,
+                            onAccepted: widget.onOpenConfirmation,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+            ],
+          );
+        }),
+      ],
     );
   }
 
   List<MapEntry<DateTime, List<WorkJob>>> _groupByDate(List<WorkJob> jobs) {
     final map = <DateTime, List<WorkJob>>{};
     for (final j in jobs) {
-      final d = DateTime(j.pickupDate.year, j.pickupDate.month, j.pickupDate.day);
+      final d = DateTime(
+        j.pickupDate.year,
+        j.pickupDate.month,
+        j.pickupDate.day,
+      );
       map.putIfAbsent(d, () => []).add(j);
     }
-    final entries = map.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+    for (final items in map.values) {
+      items.sort((a, b) {
+        final statusCompare = _statusWeight(
+          a.status,
+        ).compareTo(_statusWeight(b.status));
+        if (statusCompare != 0) return statusCompare;
+        return a.pickupDate.compareTo(b.pickupDate);
+      });
+    }
+    final entries = map.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
     return entries;
+  }
+
+  int _statusWeight(JobStatus status) {
+    switch (status) {
+      case JobStatus.urgent:
+        return 0;
+      case JobStatus.doing:
+        return 1;
+      case JobStatus.confirming:
+        return 2;
+      case JobStatus.done:
+        return 3;
+    }
+  }
+}
+
+class _CategoryFilter extends StatelessWidget {
+  final WorkCategory? selected;
+  final ValueChanged<WorkCategory?> onChanged;
+
+  const _CategoryFilter({required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _FilterChip(
+          label: 'ทั้งหมด',
+          selected: selected == null,
+          onTap: () => onChanged(null),
+        ),
+        const SizedBox(width: 8),
+        _FilterChip(
+          label: 'งานรายวัน',
+          selected: selected == WorkCategory.daily,
+          onTap: () => onChanged(WorkCategory.daily),
+        ),
+        const SizedBox(width: 8),
+        _FilterChip(
+          label: 'งานเหมา',
+          selected: selected == WorkCategory.package,
+          onTap: () => onChanged(WorkCategory.package),
+        ),
+      ],
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF111827) : const Color(0xFFF4F4F6),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0x14111827)),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? Colors.white : const Color(0xFF111827),
+              fontWeight: FontWeight.w900,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PackageFolder {
+  final String id;
+  final String name;
+
+  const _PackageFolder({required this.id, required this.name});
+
+  factory _PackageFolder.fromDoc(DocumentSnapshot doc) {
+    final data = (doc.data() as Map<String, dynamic>? ?? {});
+    return _PackageFolder(
+      id: doc.id,
+      name: (data['name'] ?? doc.id).toString(),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String label;
+  const _SectionHeader({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontWeight: FontWeight.w900,
+        fontSize: 14,
+        color: Color(0xFF111827),
+      ),
+    );
+  }
+}
+
+class _PackageFolderCard extends StatelessWidget {
+  final _PackageFolder folder;
+  final VoidCallback onTap;
+
+  const _PackageFolderCard({required this.folder, required this.onTap});
+
+  static const _text = Color(0xFF111827);
+  static const _muted = Color(0xFF6B7280);
+  static const _line = Color(0x14111827);
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Ink(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _line),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F6FF),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0x331D4ED8)),
+              ),
+              child: const Icon(
+                Icons.folder_special_rounded,
+                color: Color(0xFF1D4ED8),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    folder.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: _text,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'เปิดรายการงานในโฟลเดอร์',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _muted,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: _muted),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -166,7 +516,10 @@ class _SearchBox extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: Colors.black.withOpacity(0.25)),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
       ),
     );
   }
@@ -178,7 +531,7 @@ class _DayHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = DateFormat('EEE, dd MMM', 'en_US').format(date);
+    final text = DateFormat('EEE, dd MMM', 'th_TH').format(date);
     return Row(
       children: [
         Text(
@@ -205,6 +558,10 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final detailText = job.packageName.isNotEmpty
+        ? 'งานเหมา: ${job.packageName}'
+        : workCategoryLabel(job.category);
+
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
@@ -263,7 +620,7 @@ class _JobCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          'Tailor: ${job.customerName.isEmpty ? '-' : job.customerName}', // ถ้าคุณมี field tailorName ให้เปลี่ยนเป็น tailorName
+                          detailText,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -317,7 +674,8 @@ class _GarmentAvatar extends StatelessWidget {
         child: Image.asset(
           assetPath,
           fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const Icon(Icons.checkroom_rounded, color: Color(0xFF9CA3AF)),
+          errorBuilder: (_, __, ___) =>
+              const Icon(Icons.checkroom_rounded, color: Color(0xFF9CA3AF)),
         ),
       ),
     );
@@ -365,19 +723,25 @@ class _StatusChip extends StatelessWidget {
 
     switch (status) {
       case JobStatus.urgent:
-        label = 'Urgent';
+        label = 'ด่วน';
         fg = const Color(0xFFB42318);
         bg = const Color(0xFFFFF1F1);
         border = const Color(0x33B42318);
         break;
       case JobStatus.doing:
-        label = 'Doing';
+        label = 'กำลังทำ';
         fg = const Color(0xFF1D4ED8);
         bg = const Color(0xFFF0F6FF);
         border = const Color(0x331D4ED8);
         break;
+      case JobStatus.confirming:
+        label = 'รอยืนยัน';
+        fg = const Color(0xFF92400E);
+        bg = const Color(0xFFFFFBEB);
+        border = const Color(0x3392400E);
+        break;
       case JobStatus.done:
-        label = 'Done';
+        label = 'เสร็จแล้ว';
         fg = const Color(0xFF047857);
         bg = const Color(0xFFECFDF5);
         border = const Color(0x33047857);

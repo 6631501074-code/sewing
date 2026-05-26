@@ -5,14 +5,21 @@ import 'package:intl/intl.dart';
 import 'jobs_repository.dart';
 import 'work_job.dart';
 
-class WorkJobDetailPage extends StatelessWidget {
+class WorkJobDetailPage extends StatefulWidget {
   final String jobId; // docId
-  const WorkJobDetailPage({super.key, required this.jobId});
+  final VoidCallback? onAccepted;
+
+  const WorkJobDetailPage({super.key, required this.jobId, this.onAccepted});
+
+  @override
+  State<WorkJobDetailPage> createState() => _WorkJobDetailPageState();
+}
+
+class _WorkJobDetailPageState extends State<WorkJobDetailPage> {
+  bool _saving = false;
 
   static const _text = Color(0xFF111827);
   static const _muted = Color(0xFF6B7280);
-  static const _line = Color(0x14111827);
-  static const _bg = Color(0xFFF4F4F6);
 
   @override
   Widget build(BuildContext context) {
@@ -24,13 +31,20 @@ class WorkJobDetailPage extends StatelessWidget {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: _text,
-        title: const Text('รายละเอียดงาน', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text(
+          'รายละเอียดงาน',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
       ),
       body: FutureBuilder<DocumentSnapshot>(
-        future: repo.getJob(jobId),
+        future: repo.getJob(widget.jobId),
         builder: (context, snap) {
-          if (snap.hasError) return const Center(child: Text('โหลดไม่สำเร็จ'));
-          if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+          if (snap.hasError) {
+            return const Center(child: Text('โหลดไม่สำเร็จ'));
+          }
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
           final job = WorkJob.fromDoc(snap.data!);
 
@@ -43,18 +57,35 @@ class WorkJobDetailPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(job.title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: _text)),
+                    Text(
+                      job.title.isNotEmpty ? job.title : '#${job.jobId}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        color: _text,
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    Text('${job.customerName} • ${job.customerPhone}',
-                        style: const TextStyle(fontWeight: FontWeight.w800, color: _muted)),
+                    Text(
+                      '${job.customerName} • ${job.customerPhone}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: _muted,
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _Pill(label: 'หมวดหมู่: ${workCategoryLabel(job.category)}'),
+                        _Pill(
+                          label: 'หมวดหมู่: ${workCategoryLabel(job.category)}',
+                        ),
+                        _Pill(label: 'สถานะ: ${jobStatusLabel(job.status)}'),
                         _Pill(label: 'วันนัด: ${d(job.appointmentDate)}'),
                         _Pill(label: 'วันรับ: ${d(job.pickupDate)}'),
+                        if (job.packageName.isNotEmpty)
+                          _Pill(label: 'งานเหมา: ${job.packageName}'),
                       ],
                     ),
                   ],
@@ -62,7 +93,13 @@ class WorkJobDetailPage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              Text('ค่าที่วัด', style: TextStyle(fontWeight: FontWeight.w900, color: _text.withOpacity(0.85))),
+              Text(
+                'ค่าที่วัด',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: _text.withOpacity(0.85),
+                ),
+              ),
               const SizedBox(height: 8),
 
               _Card(
@@ -74,17 +111,87 @@ class WorkJobDetailPage extends StatelessWidget {
                       child: Row(
                         children: [
                           Expanded(
-                            child: Text(e.key,
-                                style: const TextStyle(fontWeight: FontWeight.w800, color: _muted)),
+                            child: Text(
+                              e.key,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: _muted,
+                              ),
+                            ),
                           ),
-                          Text(v.isEmpty ? '-' : v,
-                              style: const TextStyle(fontWeight: FontWeight.w900, color: _text)),
+                          Text(
+                            v.isEmpty ? '-' : v,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: _text,
+                            ),
+                          ),
                         ],
                       ),
                     );
                   }).toList(),
                 ),
               ),
+              if (job.notes.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'รายละเอียดเพิ่มเติม',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: _text.withOpacity(0.85),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _Card(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      job.notes,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: _text,
+                        height: 1.25,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+
+              if (job.status == JobStatus.doing ||
+                  job.status == JobStatus.urgent)
+                SizedBox(
+                  height: 52,
+                  child: FilledButton.icon(
+                    onPressed: _saving
+                        ? null
+                        : () async {
+                            setState(() => _saving = true);
+                            try {
+                              await repo.moveToConfirmation(job.id);
+                              if (!context.mounted) return;
+                              Navigator.pop(context);
+                              widget.onAccepted?.call();
+                            } catch (_) {
+                              if (!context.mounted) return;
+                              setState(() => _saving = false);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('ย้ายงานไม่สำเร็จ'),
+                                ),
+                              );
+                            }
+                          },
+                    icon: _saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.playlist_add_check_rounded),
+                    label: Text(_saving ? 'กำลังบันทึก...' : 'จะทำรายการนี้'),
+                  ),
+                ),
             ],
           );
         },
@@ -130,7 +237,14 @@ class _Pill extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: _line),
       ),
-      child: Text(label, style: const TextStyle(fontWeight: FontWeight.w900, color: _text, fontSize: 12)),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontWeight: FontWeight.w900,
+          color: _text,
+          fontSize: 12,
+        ),
+      ),
     );
   }
 }

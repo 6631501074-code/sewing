@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'garment_dialog.dart';
 import 'thai_number_formatter.dart';
+import 'thai_text_input_formatter.dart';
 
 enum WorkCategory { daily, package }
 
@@ -21,6 +22,9 @@ class CustomerSaveResult {
   final DateTime appointmentDate;
   final DateTime pickupDate;
   final WorkCategory category;
+  final String packageName;
+  final String packageFolderId;
+  final String notes;
 
   CustomerSaveResult({
     required this.name,
@@ -29,22 +33,32 @@ class CustomerSaveResult {
     required this.appointmentDate,
     required this.pickupDate,
     required this.category,
+    this.packageName = '',
+    this.packageFolderId = '',
+    this.notes = '',
   });
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'phone': phone,
-        'deposit': deposit,
-        'appointmentDate': appointmentDate.toIso8601String(),
-        'pickupDate': pickupDate.toIso8601String(),
-        'category': category.name,
-      };
+    'name': name,
+    'phone': phone,
+    'deposit': deposit,
+    'appointmentDate': appointmentDate.toIso8601String(),
+    'pickupDate': pickupDate.toIso8601String(),
+    'category': category.name,
+    'packageName': packageName,
+    'packageFolderId': packageFolderId,
+    'notes': notes,
+  };
 }
 
 Future<CustomerSaveResult?> showSaveCustomerDialog({
   required BuildContext context,
   required GarmentType garmentType,
   required Map<String, String> measures,
+  WorkCategory initialCategory = WorkCategory.daily,
+  String initialPackageName = '',
+  String packageFolderId = '',
+  bool lockCategory = false,
 }) {
   return showDialog<CustomerSaveResult>(
     context: context,
@@ -52,6 +66,10 @@ Future<CustomerSaveResult?> showSaveCustomerDialog({
     builder: (ctx) => _SaveCustomerDialog(
       garmentType: garmentType,
       measures: measures,
+      initialCategory: initialCategory,
+      initialPackageName: initialPackageName,
+      packageFolderId: packageFolderId,
+      lockCategory: lockCategory,
     ),
   );
 }
@@ -59,10 +77,18 @@ Future<CustomerSaveResult?> showSaveCustomerDialog({
 class _SaveCustomerDialog extends StatefulWidget {
   final GarmentType garmentType;
   final Map<String, String> measures;
+  final WorkCategory initialCategory;
+  final String initialPackageName;
+  final String packageFolderId;
+  final bool lockCategory;
 
   const _SaveCustomerDialog({
     required this.garmentType,
     required this.measures,
+    required this.initialCategory,
+    required this.initialPackageName,
+    required this.packageFolderId,
+    required this.lockCategory,
   });
 
   @override
@@ -80,11 +106,13 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
   final _nameC = TextEditingController();
   final _phoneC = TextEditingController();
   final _depositC = TextEditingController();
+  final _packageNameC = TextEditingController();
+  final _notesC = TextEditingController();
 
   late DateTime _appointmentDate;
   late DateTime _pickupDate;
 
-  WorkCategory _category = WorkCategory.daily;
+  late WorkCategory _category;
 
   @override
   void initState() {
@@ -92,6 +120,8 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
     final now = DateTime.now();
     _appointmentDate = DateTime(now.year, now.month, now.day);
     _pickupDate = _appointmentDate;
+    _category = widget.initialCategory;
+    _packageNameC.text = widget.initialPackageName.trim();
   }
 
   @override
@@ -99,6 +129,8 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
     _nameC.dispose();
     _phoneC.dispose();
     _depositC.dispose();
+    _packageNameC.dispose();
+    _notesC.dispose();
     super.dispose();
   }
 
@@ -128,14 +160,23 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
   void _onSave() {
     final name = _nameC.text.trim();
     final phone = _phoneC.text.trim();
+    final packageName = _packageNameC.text.trim();
+    final notes = _notesC.text.trim();
 
     final depositStr = ThaiToArabicDigitsFormatter.to2dpOrEmpty(_depositC.text);
     final deposit = double.tryParse(depositStr.isEmpty ? '0' : depositStr) ?? 0;
 
     if (name.isEmpty || phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกชื่อและเบอร์โทร')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('กรุณากรอกชื่อและเบอร์โทร')));
+      return;
+    }
+
+    if (_category == WorkCategory.package && packageName.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('กรุณากรอกชื่องานเหมา')));
       return;
     }
 
@@ -148,15 +189,16 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
         appointmentDate: _appointmentDate,
         pickupDate: _pickupDate,
         category: _category,
+        packageName: packageName,
+        packageFolderId: widget.packageFolderId,
+        notes: notes,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final title = (widget.garmentType == GarmentType.pantsOfficial)
-        ? 'บันทึกลูกค้า (กางเกงราชการ)'
-        : 'บันทึกลูกค้า';
+    final title = 'บันทึกลูกค้า (${garmentTypeLabel(widget.garmentType)})';
 
     return Dialog(
       backgroundColor: _surface, // ✅ ขาว
@@ -198,6 +240,19 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
 
               const SizedBox(height: 14),
 
+              if (_category == WorkCategory.package) ...[
+                _field(
+                  label: 'ชื่องานเหมา',
+                  controller: _packageNameC,
+                  hint: 'เช่น เหมาชุดทีมร้าน A',
+                  keyboardType: TextInputType.text,
+                  textCapitalization: TextCapitalization.words,
+                  inputFormatters: [ThaiTextInputFormatter.name],
+                  readOnly: widget.lockCategory,
+                ),
+                const SizedBox(height: 10),
+              ],
+
               // ✅ ชื่อไทย: keyboard ไทย/ชื่อคน + allow ตัวอักษรไทย/เว้นวรรค/จุด/ขีด
               _field(
                 label: 'ชื่อลูกค้า',
@@ -205,11 +260,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
                 hint: 'เช่น คุณเอ',
                 keyboardType: TextInputType.name,
                 textCapitalization: TextCapitalization.words,
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(
-                    RegExp(r"[ก-๙a-zA-Z\s\.\-']"),
-                  ),
-                ],
+                inputFormatters: [ThaiTextInputFormatter.name],
               ),
               const SizedBox(height: 10),
 
@@ -231,7 +282,9 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
                 label: 'ค่ามัดจำ',
                 controller: _depositC,
                 hint: '0.00',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 inputFormatters: [ThaiToArabicDigitsFormatter()],
               ),
 
@@ -308,6 +361,17 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
                 ),
               ),
 
+              const SizedBox(height: 14),
+
+              _field(
+                label: 'รายละเอียดเพิ่มเติม',
+                controller: _notesC,
+                hint: 'เช่น ทรงที่ต้องการ สีผ้า หรือหมายเหตุถึงช่าง',
+                keyboardType: TextInputType.multiline,
+                inputFormatters: [ThaiTextInputFormatter.note],
+                maxLines: 3,
+              ),
+
               const SizedBox(height: 16),
 
               Row(
@@ -361,7 +425,9 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
       return Expanded(
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () => setState(() => _category = value),
+          onTap: widget.lockCategory
+              ? null
+              : () => setState(() => _category = value),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -409,6 +475,8 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
     TextInputType? keyboardType,
     TextCapitalization textCapitalization = TextCapitalization.none,
     List<TextInputFormatter>? inputFormatters,
+    bool readOnly = false,
+    int maxLines = 1,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,6 +494,8 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
           keyboardType: keyboardType,
           textCapitalization: textCapitalization,
           inputFormatters: inputFormatters,
+          readOnly: readOnly,
+          maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(color: _muted),
@@ -443,7 +513,10 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(color: _text.withOpacity(0.25)),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
           ),
         ),
       ],

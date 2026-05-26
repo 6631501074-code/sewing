@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
-enum TaskStatus { urgent, doing, done }
+enum TaskStatus { urgent, doing, confirming, done }
 
 class TaskCard extends StatelessWidget {
-  final String title;      // ชื่องาน
+  final String title; // ชื่องาน
   final String tailorName; // ชื่อคนตัด
   final TaskStatus status; // สถานะ
-  final String imagePath;  // รูป
+  final String imagePath; // รูป
+  final String priorityLabel;
   final VoidCallback? onTap;
 
   const TaskCard({
@@ -15,6 +16,7 @@ class TaskCard extends StatelessWidget {
     required this.tailorName,
     required this.status,
     required this.imagePath,
+    this.priorityLabel = '',
     this.onTap,
   });
 
@@ -73,6 +75,17 @@ class TaskCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (priorityLabel.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      priorityLabel,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFB45309),
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -104,11 +117,29 @@ class TaskCard extends StatelessWidget {
   _StatusUI _statusStyle(TaskStatus s) {
     switch (s) {
       case TaskStatus.urgent:
-        return _StatusUI("Urgent", const Color(0xFFFFE5E5), const Color(0xFFCC1F1F));
+        return _StatusUI(
+          "ด่วน",
+          const Color(0xFFFFE5E5),
+          const Color(0xFFCC1F1F),
+        );
       case TaskStatus.doing:
-        return _StatusUI("Doing", const Color(0xFFE6F0FF), const Color(0xFF1E63D5));
+        return _StatusUI(
+          "กำลังทำ",
+          const Color(0xFFE6F0FF),
+          const Color(0xFF1E63D5),
+        );
+      case TaskStatus.confirming:
+        return _StatusUI(
+          "รอยืนยัน",
+          const Color(0xFFFFF4D6),
+          const Color(0xFFB45309),
+        );
       case TaskStatus.done:
-        return _StatusUI("Done", const Color(0xFFE7F8EF), const Color(0xFF168A47));
+        return _StatusUI(
+          "เสร็จแล้ว",
+          const Color(0xFFE7F8EF),
+          const Color(0xFF168A47),
+        );
     }
   }
 }

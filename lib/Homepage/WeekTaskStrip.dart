@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
-import 'DayTaskInfo.dart'; // ที่มี enum TaskStatus และ DayTaskInfo
+import 'package:sewing/See work/work_job.dart';
+
+import 'DayTaskInfo.dart';
 
 class WeekTaskStrip extends StatefulWidget {
-  const WeekTaskStrip({super.key});
+  final DateTime selectedDate;
+  final List<WorkJob> jobs;
+  final ValueChanged<DateTime> onDateSelected;
+
+  const WeekTaskStrip({
+    super.key,
+    required this.selectedDate,
+    required this.jobs,
+    required this.onDateSelected,
+  });
 
   @override
   State<WeekTaskStrip> createState() => _WeekTaskStripState();
 }
 
 class _WeekTaskStripState extends State<WeekTaskStrip> {
-  late final List<Map<String, dynamic>> mock;
-  late int selectedIndex;
+  late final List<DateTime> days;
 
   final ScrollController _scrollController = ScrollController();
 
@@ -20,40 +30,23 @@ class _WeekTaskStripState extends State<WeekTaskStrip> {
   @override
   void initState() {
     super.initState();
-
-    // ✅ ตัดเวลาให้เป็น 00:00
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    // ✅ วันนี้อยู่ตรงกลาง (index 3)
-    selectedIndex = 3;
+    final today = _dayOnly(DateTime.now());
     final start = today.subtract(const Duration(days: 3));
+    days = List.generate(7, (i) => start.add(Duration(days: i)));
 
-    mock = List.generate(7, (i) {
-      final d = start.add(Duration(days: i));
-      final status = (i == 3)
-          ? TaskStatus.urgent
-          : (i % 2 == 0 ? TaskStatus.normal : TaskStatus.none);
-
-      return {
-        "date": d,
-        "status": status,
-      };
-    });
-
-    // ✅ เลื่อนมาให้วันนี้อยู่กลางจอหลัง build เสร็จ
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final screenWidth = MediaQuery.of(context).size.width;
-      final centerOffset =
-          (itemWidth + spacing) * selectedIndex - (screenWidth / 2.5) + (itemWidth / 2.5);
-
-      _scrollController.jumpTo(
-        centerOffset.clamp(
-          0.0,
-          _scrollController.position.maxScrollExtent,
-        ),
-      );
+      _centerSelectedDay();
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant WeekTaskStrip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_sameDay(widget.selectedDate, oldWidget.selectedDate)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _centerSelectedDay();
+      });
+    }
   }
 
   @override
@@ -64,18 +57,61 @@ class _WeekTaskStripState extends State<WeekTaskStrip> {
         controller: _scrollController,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: mock.length,
+        itemCount: days.length,
         separatorBuilder: (_, __) => const SizedBox(width: spacing),
         itemBuilder: (context, index) {
+          final date = days[index];
           return DayTaskInfo(
-            date: mock[index]["date"] as DateTime,
-            status: mock[index]["status"] as TaskStatus,
-            isSelected: selectedIndex == index,
-            onTap: () => setState(() => selectedIndex = index),
+            date: date,
+            status: _statusFor(date),
+            isSelected: _sameDay(widget.selectedDate, date),
+            onTap: () => widget.onDateSelected(date),
           );
         },
       ),
     );
+  }
+
+  TaskStatus _statusFor(DateTime date) {
+    final dayJobs = widget.jobs.where((j) {
+      final active =
+          j.status == JobStatus.urgent ||
+          j.status == JobStatus.doing ||
+          j.status == JobStatus.confirming;
+      return active && _sameDay(j.pickupDate, date);
+    }).toList();
+
+    if (dayJobs.any((j) => j.status == JobStatus.urgent)) {
+      return TaskStatus.urgent;
+    }
+    if (dayJobs.isNotEmpty) {
+      return TaskStatus.normal;
+    }
+    return TaskStatus.none;
+  }
+
+  void _centerSelectedDay() {
+    if (!_scrollController.hasClients) return;
+    final selectedIndex = days.indexWhere(
+      (d) => _sameDay(d, widget.selectedDate),
+    );
+    if (selectedIndex < 0) return;
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final centerOffset =
+        (itemWidth + spacing) * selectedIndex -
+        (screenWidth / 2.5) +
+        (itemWidth / 2.5);
+
+    _scrollController.jumpTo(
+      centerOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+    );
+  }
+
+  DateTime _dayOnly(DateTime date) => DateTime(date.year, date.month, date.day);
+
+  bool _sameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   @override

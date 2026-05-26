@@ -1,6 +1,17 @@
 import 'package:flutter/material.dart';
 
-enum GarmentType { none, pantsOfficial }
+enum GarmentType { none, shirt, pantsOfficial }
+
+String garmentTypeLabel(GarmentType type) {
+  switch (type) {
+    case GarmentType.shirt:
+      return 'เสื้อ';
+    case GarmentType.pantsOfficial:
+      return 'กางเกงราชการ';
+    case GarmentType.none:
+      return 'ยังไม่ได้เลือกประเภท';
+  }
+}
 
 Future<GarmentType?> showGarmentDialog(BuildContext context) {
   return showDialog<GarmentType>(
@@ -24,13 +35,13 @@ Future<GarmentType?> showGarmentDialog(BuildContext context) {
               ),
               const SizedBox(height: 12),
 
-              // ✅ เสื้อ (อยู่ด้านบน) - ยังล็อก
+              // ✅ เสื้อ
               _GarmentBigCard(
-                title: 'เสื้อ (เร็ว ๆ นี้)',
+                title: 'เสื้อ',
                 assetPath: 'asset/img/img4.png',
-                enabled: false,
-                badgeText: 'Locked',
-                onTap: null,
+                enabled: true,
+                badgeText: 'พร้อม',
+                onTap: () => Navigator.pop(ctx, GarmentType.shirt),
               ),
 
               const SizedBox(height: 12),
@@ -40,7 +51,7 @@ Future<GarmentType?> showGarmentDialog(BuildContext context) {
                 title: 'กางเกงราชการ',
                 assetPath: 'asset/img/img3.png',
                 enabled: true,
-                badgeText: 'Ready',
+                badgeText: 'พร้อม',
                 onTap: () => Navigator.pop(ctx, GarmentType.pantsOfficial),
               ),
 
@@ -50,8 +61,13 @@ Future<GarmentType?> showGarmentDialog(BuildContext context) {
                 child: TextButton(
                   onPressed: () => Navigator.pop(ctx),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: const Text(
                     'ปิด',
@@ -142,7 +158,10 @@ class _GarmentBigCard extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(enabled ? 0.08 : 0.06),
                       borderRadius: BorderRadius.circular(99),

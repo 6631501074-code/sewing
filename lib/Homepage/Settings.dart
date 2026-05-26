@@ -12,7 +12,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text('โปรไฟล์'),
         centerTitle: true,
         actions: [
           PopupMenuButton<String>(
@@ -80,7 +80,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
             ),
             SizedBox(height: 16),
             Text(
-              'Admin User',
+              'ผู้ดูแลระบบ',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 6),

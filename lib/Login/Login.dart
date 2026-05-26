@@ -17,21 +17,20 @@ class _LoginState extends State<Login> {
     final password = _passwordController.text.trim();
 
     if (username.isEmpty || password.isEmpty) {
-      _showMessage('กรุณากรอก Username และ Password');
+      _showMessage('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');
       return;
     }
 
-   if (username == 'admin' && password == '1234') {
-  _showMessage('Login สำเร็จ ✅');
+    if (username == 'admin' && password == '1234') {
+      _showMessage('เข้าสู่ระบบสำเร็จ');
 
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(builder: (context) => const Homepage()),
-  );
-} else {
-  _showMessage('Username หรือ Password ไม่ถูกต้อง ❌');
-
-}
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const Homepage()),
+      );
+    } else {
+      _showMessage('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+    }
   }
 
   void _showMessage(String message) {
@@ -56,7 +55,7 @@ class _LoginState extends State<Login> {
                   Image.asset('asset/img/img1.png'),
 
                   const Text(
-                    'Sewing',
+                    'ระบบร้านตัดเย็บ',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Santa',
@@ -68,7 +67,7 @@ class _LoginState extends State<Login> {
                   const SizedBox(height: 4),
 
                   const Text(
-                    'Login Screen',
+                    'เข้าสู่ระบบ',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
                   ),
@@ -78,7 +77,7 @@ class _LoginState extends State<Login> {
                   TextField(
                     controller: _usernameController,
                     decoration: const InputDecoration(
-                      labelText: 'Username',
+                      labelText: 'ชื่อผู้ใช้',
                       labelStyle: TextStyle(color: Colors.black),
                       enabledBorder: UnderlineInputBorder(
                         borderSide: BorderSide(color: Colors.black),
@@ -95,7 +94,7 @@ class _LoginState extends State<Login> {
                     controller: _passwordController,
                     obscureText: true,
                     decoration: const InputDecoration(
-                      labelText: 'Password',
+                      labelText: 'รหัสผ่าน',
                       labelStyle: TextStyle(color: Colors.black),
                       enabledBorder: UnderlineInputBorder(
                         borderSide: BorderSide(color: Colors.black),
@@ -111,7 +110,7 @@ class _LoginState extends State<Login> {
                   Align(
                     alignment: Alignment.center,
                     child: ElevatedButton(
-                      onPressed: _login, 
+                      onPressed: _login,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,
                         elevation: 0,
@@ -121,7 +120,7 @@ class _LoginState extends State<Login> {
                         ),
                       ),
                       child: const Text(
-                        'Login',
+                        'เข้าสู่ระบบ',
                         style: TextStyle(
                           fontSize: 23,
                           fontWeight: FontWeight.w500,
