@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'firestore_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // ไม่จำเป็นในหน้า ถ้าใช้ใน service แล้ว
 
 import 'garment_dialog.dart';
 import 'measure_slide.dart';
@@ -13,14 +12,15 @@ import 'thai_number_formatter.dart';
 import 'save_customer_dialog.dart';
 
 class MiccPage extends StatefulWidget {
-  const MiccPage({super.key});
+  final int openPickerRequest;
+
+  const MiccPage({super.key, this.openPickerRequest = 0});
 
   @override
   State<MiccPage> createState() => _MicPageState();
 }
 
 class _MicPageState extends State<MiccPage> {
-
   final _fs = FirestoreService();
 
   GarmentType _selected = GarmentType.none;
@@ -36,9 +36,8 @@ class _MicPageState extends State<MiccPage> {
   // ✅ โหมดพูดไหลต่อ
   bool _autoContinue = true;
   bool _restarting = false;
+  bool _pickerOpening = false;
 
-  // ✅ เอาไว้รอให้ page เปลี่ยนจริง (sync _pageIndex)
-  final Completer<void> _pageSettled = Completer<void>();
   Completer<void>? _waitPageChange;
 
   final List<_MeasureField> _fields = const [
@@ -58,6 +57,21 @@ class _MicPageState extends State<MiccPage> {
   void initState() {
     super.initState();
     _initSpeechFlow();
+    if (widget.openPickerRequest > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showGarmentPickerFromNavigation();
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant MiccPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.openPickerRequest != oldWidget.openPickerRequest) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showGarmentPickerFromNavigation();
+      });
+    }
   }
 
   void _toast(String msg) {
@@ -93,7 +107,9 @@ class _MicPageState extends State<MiccPage> {
         setState(() => _isListening = false);
 
         if (e.errorMsg.contains('error_speech_timeout')) {
-          _toast('Speech timeout: Emulator มักไม่ส่งเสียงเข้าไมค์ → แนะนำมือถือจริง/เปิด Host audio input');
+          _toast(
+            'Speech timeout: Emulator มักไม่ส่งเสียงเข้าไมค์ → แนะนำมือถือจริง/เปิด Host audio input',
+          );
         } else {
           _toast('Speech error: ${e.errorMsg}');
         }
@@ -111,9 +127,11 @@ class _MicPageState extends State<MiccPage> {
     // หา locale ไทยอัตโนมัติ
     try {
       final locales = await _speech.locales();
-      final th = locales.where((l) =>
-          l.localeId.toLowerCase().startsWith('th') ||
-          l.name.toLowerCase().contains('thai'));
+      final th = locales.where(
+        (l) =>
+            l.localeId.toLowerCase().startsWith('th') ||
+            l.name.toLowerCase().contains('thai'),
+      );
       if (!mounted) return;
       setState(() => _localeId = th.isNotEmpty ? th.first.localeId : null);
     } catch (_) {
@@ -136,6 +154,16 @@ class _MicPageState extends State<MiccPage> {
     if (_selected != GarmentType.none) return;
     final result = await showGarmentDialog(context);
     if (result != null) setState(() => _selected = result);
+  }
+
+  Future<void> _showGarmentPickerFromNavigation() async {
+    if (!mounted || _pickerOpening) return;
+    _pickerOpening = true;
+    final result = await showGarmentDialog(context);
+    if (mounted && result != null) {
+      setState(() => _selected = result);
+    }
+    _pickerOpening = false;
   }
 
   // ✅ ขอให้การเลื่อนหน้า "เสร็จ" ก่อนค่อยทำต่อ
@@ -172,7 +200,9 @@ class _MicPageState extends State<MiccPage> {
       onResult: (result) async {
         if (!result.finalResult) return;
 
-        final number = ThaiSpokenNumberParser.extractNumber2dp(result.recognizedWords);
+        final number = ThaiSpokenNumberParser.extractNumber2dp(
+          result.recognizedWords,
+        );
 
         // ❌ จับเลขไม่ได้
         if (number.isEmpty) {
@@ -254,42 +284,41 @@ class _MicPageState extends State<MiccPage> {
   }
 
   Future<void> _save() async {
-  await _ensureSelected();
-  if (_selected == GarmentType.none) return;
+    await _ensureSelected();
+    if (!mounted) return;
+    if (_selected == GarmentType.none) return;
 
-  final measures = <String, String>{
-    for (final f in _fields)
-      f.keyName: ThaiToArabicDigitsFormatter.to2dpOrEmpty(
-        _controllers[f.keyName]!.text,
-      ),
-  };
+    final measures = <String, String>{
+      for (final f in _fields)
+        f.keyName: ThaiToArabicDigitsFormatter.to2dpOrEmpty(
+          _controllers[f.keyName]!.text,
+        ),
+    };
 
-  final result = await showSaveCustomerDialog(
-    context: context,
-    garmentType: _selected,
-    measures: measures,
-  );
-
-  if (result == null) return;
-
-  try {
-    // ✅ เลือก default status ของงานใหม่ (เช่น doing)
-    final jobId = await _fs.createJob(
-      customer: result,
-      measures: measures,
+    final result = await showSaveCustomerDialog(
+      context: context,
       garmentType: _selected,
-      status: 'doing',
+      measures: measures,
     );
 
-    debugPrint('✅ Saved jobId=$jobId');
-    _toast('บันทึกลงระบบแล้ว ✅');
-  } catch (e) {
-    debugPrint('❌ Save error: $e');
-    _toast('บันทึกไม่สำเร็จ ❌');
+    if (result == null) return;
+
+    try {
+      // ✅ เลือก default status ของงานใหม่ (เช่น doing)
+      final jobId = await _fs.createJob(
+        customer: result,
+        measures: measures,
+        garmentType: _selected,
+        status: 'doing',
+      );
+
+      debugPrint('✅ Saved jobId=$jobId');
+      _toast('บันทึกลงระบบแล้ว ✅');
+    } catch (e) {
+      debugPrint('❌ Save error: $e');
+      _toast('บันทึกไม่สำเร็จ ❌');
+    }
   }
-}
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -314,7 +343,10 @@ class _MicPageState extends State<MiccPage> {
                     if (result != null) setState(() => _selected = result);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF4F4F6),
                       borderRadius: BorderRadius.circular(16),
@@ -322,14 +354,21 @@ class _MicPageState extends State<MiccPage> {
                     child: Row(
                       children: [
                         Icon(
-                          canUse ? Icons.check_circle : Icons.radio_button_unchecked,
+                          canUse
+                              ? Icons.check_circle
+                              : Icons.radio_button_unchecked,
                           color: canUse ? Colors.blueAccent : Colors.grey,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            canUse ? 'เลือก: กางเกงราชการ' : 'ยังไม่ได้เลือกประเภท',
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                            canUse
+                                ? 'เลือก: ${garmentTypeLabel(_selected)}'
+                                : 'ยังไม่ได้เลือกประเภท',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                         Text(
@@ -361,7 +400,8 @@ class _MicPageState extends State<MiccPage> {
                       onPageChanged: (i) {
                         setState(() => _pageIndex = i);
                         // ✅ ปลดล็อกรอ page change (สำหรับ autoContinue)
-                        if (_waitPageChange != null && !_waitPageChange!.isCompleted) {
+                        if (_waitPageChange != null &&
+                            !_waitPageChange!.isCompleted) {
                           _waitPageChange!.complete();
                         }
                       },
@@ -406,8 +446,13 @@ class _MicPageState extends State<MiccPage> {
                           foregroundColor: Colors.white,
                           backgroundColor: const Color(0xFF8F8F8F),
                         ),
-                        child: const Text('ล้างค่า',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                        child: const Text(
+                          'ล้างค่า',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -418,10 +463,18 @@ class _MicPageState extends State<MiccPage> {
                           backgroundColor: Colors.blueAccent,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(50),
+                          ),
                         ),
-                        child: const Text('บันทึก',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
+                        child: const Text(
+                          'บันทึก',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -440,14 +493,16 @@ class _MicPageState extends State<MiccPage> {
             width: 70,
             height: 70,
             decoration: BoxDecoration(
-              color: canUse ? Colors.blueAccent : Colors.blueAccent.withOpacity(0.35),
+              color: canUse
+                  ? Colors.blueAccent
+                  : Colors.blueAccent.withOpacity(0.35),
               borderRadius: BorderRadius.circular(50),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.12),
                   blurRadius: 18,
                   offset: const Offset(0, 10),
-                )
+                ),
               ],
             ),
             child: Icon(
@@ -466,5 +521,9 @@ class _MeasureField {
   final String keyName;
   final String label;
   final String unit;
-  const _MeasureField({required this.keyName, required this.label, required this.unit});
+  const _MeasureField({
+    required this.keyName,
+    required this.label,
+    required this.unit,
+  });
 }

@@ -21,6 +21,7 @@ class CustomerSaveResult {
   final DateTime appointmentDate;
   final DateTime pickupDate;
   final WorkCategory category;
+  final String packageName;
 
   CustomerSaveResult({
     required this.name,
@@ -29,16 +30,18 @@ class CustomerSaveResult {
     required this.appointmentDate,
     required this.pickupDate,
     required this.category,
+    this.packageName = '',
   });
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'phone': phone,
-        'deposit': deposit,
-        'appointmentDate': appointmentDate.toIso8601String(),
-        'pickupDate': pickupDate.toIso8601String(),
-        'category': category.name,
-      };
+    'name': name,
+    'phone': phone,
+    'deposit': deposit,
+    'appointmentDate': appointmentDate.toIso8601String(),
+    'pickupDate': pickupDate.toIso8601String(),
+    'category': category.name,
+    'packageName': packageName,
+  };
 }
 
 Future<CustomerSaveResult?> showSaveCustomerDialog({
@@ -49,10 +52,8 @@ Future<CustomerSaveResult?> showSaveCustomerDialog({
   return showDialog<CustomerSaveResult>(
     context: context,
     barrierDismissible: true,
-    builder: (ctx) => _SaveCustomerDialog(
-      garmentType: garmentType,
-      measures: measures,
-    ),
+    builder: (ctx) =>
+        _SaveCustomerDialog(garmentType: garmentType, measures: measures),
   );
 }
 
@@ -80,6 +81,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
   final _nameC = TextEditingController();
   final _phoneC = TextEditingController();
   final _depositC = TextEditingController();
+  final _packageNameC = TextEditingController();
 
   late DateTime _appointmentDate;
   late DateTime _pickupDate;
@@ -99,6 +101,7 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
     _nameC.dispose();
     _phoneC.dispose();
     _depositC.dispose();
+    _packageNameC.dispose();
     super.dispose();
   }
 
@@ -128,14 +131,22 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
   void _onSave() {
     final name = _nameC.text.trim();
     final phone = _phoneC.text.trim();
+    final packageName = _packageNameC.text.trim();
 
     final depositStr = ThaiToArabicDigitsFormatter.to2dpOrEmpty(_depositC.text);
     final deposit = double.tryParse(depositStr.isEmpty ? '0' : depositStr) ?? 0;
 
     if (name.isEmpty || phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกชื่อและเบอร์โทร')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('กรุณากรอกชื่อและเบอร์โทร')));
+      return;
+    }
+
+    if (_category == WorkCategory.package && packageName.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('กรุณากรอกชื่องานเหมา')));
       return;
     }
 
@@ -148,15 +159,14 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
         appointmentDate: _appointmentDate,
         pickupDate: _pickupDate,
         category: _category,
+        packageName: packageName,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final title = (widget.garmentType == GarmentType.pantsOfficial)
-        ? 'บันทึกลูกค้า (กางเกงราชการ)'
-        : 'บันทึกลูกค้า';
+    final title = 'บันทึกลูกค้า (${garmentTypeLabel(widget.garmentType)})';
 
     return Dialog(
       backgroundColor: _surface, // ✅ ขาว
@@ -198,6 +208,17 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
 
               const SizedBox(height: 14),
 
+              if (_category == WorkCategory.package) ...[
+                _field(
+                  label: 'ชื่องานเหมา',
+                  controller: _packageNameC,
+                  hint: 'เช่น เหมาชุดทีมร้าน A',
+                  keyboardType: TextInputType.text,
+                  textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: 10),
+              ],
+
               // ✅ ชื่อไทย: keyboard ไทย/ชื่อคน + allow ตัวอักษรไทย/เว้นวรรค/จุด/ขีด
               _field(
                 label: 'ชื่อลูกค้า',
@@ -231,7 +252,9 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
                 label: 'ค่ามัดจำ',
                 controller: _depositC,
                 hint: '0.00',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 inputFormatters: [ThaiToArabicDigitsFormatter()],
               ),
 
@@ -443,7 +466,10 @@ class _SaveCustomerDialogState extends State<_SaveCustomerDialog> {
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(color: _text.withOpacity(0.25)),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
           ),
         ),
       ],

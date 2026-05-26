@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:sewing/Homepage/Homepage.dart';
 import 'package:sewing/Voice/mic_page.dart';
 import 'package:sewing/See work/WorkQueuePage.dart';
+import 'package:sewing/See work/work_confirmation_page.dart';
+import 'package:sewing/See work/work_history_page.dart';
 
 class Navigationbar extends StatefulWidget {
   const Navigationbar({super.key});
@@ -12,23 +14,23 @@ class Navigationbar extends StatefulWidget {
 
 class _NavigationbarState extends State<Navigationbar> {
   int _index = 0;
-
-  final List<Widget> _pages = const [
-    Homepage(),
-    MiccPage(),
-    WorkQueuePage(),
-    TaskPage(),
-  ];
+  int _micPickerRequest = 0;
 
   @override
   Widget build(BuildContext context) {
     const activeColor = Colors.blueAccent;
+    final pages = [
+      Homepage(onOpenWorkQueue: () => setState(() => _index = 2)),
+      MiccPage(openPickerRequest: _micPickerRequest),
+      WorkQueuePage(onOpenConfirmation: () => setState(() => _index = 3)),
+      const WorkConfirmationPage(),
+      const WorkHistoryPage(),
+    ];
 
     return Scaffold(
       backgroundColor: Colors.white,
 
-      // ✅ สลับหน้าแบบไม่ rebuild หน้าทั้งหมด
-      body: IndexedStack(index: _index, children: _pages),
+      body: pages[_index],
 
       // ✅ แถบล่าง ขอบมน
       bottomNavigationBar: SafeArea(
@@ -40,7 +42,7 @@ class _NavigationbarState extends State<Navigationbar> {
               color: Colors.white, // ✅ พื้นหลังขาว
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: Colors.black .withOpacity(0.3), // ✅ กรอบบางสีฟ้า
+                color: Colors.black.withOpacity(0.3), // ✅ กรอบบางสีฟ้า
                 width: 1.2,
               ),
               boxShadow: [
@@ -66,7 +68,10 @@ class _NavigationbarState extends State<Navigationbar> {
                   isActive: _index == 1,
                   activeColor: activeColor,
                   inactiveColor: const Color.fromARGB(255, 111, 110, 110),
-                  onTap: () => setState(() => _index = 1),
+                  onTap: () => setState(() {
+                    _index = 1;
+                    _micPickerRequest++;
+                  }),
                 ),
                 _NavItem(
                   icon: Icons.task_alt_rounded,
@@ -76,7 +81,7 @@ class _NavigationbarState extends State<Navigationbar> {
                   onTap: () => setState(() => _index = 2),
                 ),
                 _NavItem(
-                  icon: Icons.bar_chart_rounded,
+                  icon: Icons.fact_check_rounded,
                   isActive: _index == 3,
                   activeColor: activeColor,
                   inactiveColor: const Color.fromARGB(255, 111, 110, 110),
@@ -144,18 +149,5 @@ class _NavItem extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-//
-// ✅ หน้า Placeholder (สร้างหน้าใหม่ไว้ให้ก่อน)
-// คุณค่อยเอาโค้ดหน้าจริงมาแทนทีหลังได้
-//
-
-class TaskPage extends StatelessWidget {
-  const TaskPage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text("History Page"));
   }
 }

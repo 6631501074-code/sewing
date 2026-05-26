@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class DailyChallengeCard extends StatelessWidget {
-  const DailyChallengeCard({super.key});
+  final int pendingCount;
+
+  const DailyChallengeCard({super.key, this.pendingCount = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +34,7 @@ class DailyChallengeCard extends StatelessWidget {
                 SizedBox(height: 5),
                 Text(
                   'Do your plan before 09:00 AM',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
                 ),
               ],
             ),
@@ -52,13 +51,13 @@ class DailyChallengeCard extends StatelessWidget {
             ),
           ),
 
-          // ✅ Text 
-          const Positioned(
+          // ✅ Text
+          Positioned(
             left: 20,
             bottom: 20,
             child: Text(
-              '4 tasks pending',
-              style: TextStyle(
+              '$pendingCount tasks pending',
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: Colors.black,
